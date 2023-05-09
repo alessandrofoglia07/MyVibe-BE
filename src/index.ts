@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import authRouter from './usersAuth.js';
+import authRouter, { verifyAccessToken } from './auth.js';
 
 dotenv.config();
 
@@ -20,8 +20,8 @@ const URI = process.env.MONGODB_URI || '';
 const connection = async () => {
     try {
         await mongoose.connect(URI);
-        console.log('Connected to MongoDB');
-        app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+        console.log('\x1b[36m', '-- Connected to MongoDB');
+        app.listen(PORT, () => console.log('\x1b[36m', `-- Server running on port ${PORT}`));
     } catch (err) {
         console.log(err);
     }
