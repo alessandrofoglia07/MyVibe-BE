@@ -40,8 +40,6 @@ const sendEmail = (recipient: string, subject: string, text: string) => {
     transporter.sendMail(mailOptions, (err: any, info: any) => {
         if (err) {
             console.log(err);
-        } else {
-            console.log("Email sent: " + info.response);
         }
     });
 };
@@ -93,20 +91,22 @@ export const verifyAccessToken = (req: authRequest, res: Response, next: NextFun
 /* req format:
 {
     username: string,
-    email: string
+    email: string,
+    password: string
 }
 */
 router.post('/send-code', async (req: Request, res: Response) => {
-    const { username, email } = req.body;
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) return res.send({ message: 'All fields required' });
 
     try {
         // Check if email is already registered
         const userByEmail = await User.findOne({ email: email });
-        if (userByEmail) return res.status(400).send({ message: 'Email already registered' });
+        if (userByEmail) return res.send({ message: 'Email already registered' });
 
         // Check if username is already taken
         const userByUsername = await User.findOne({ username: username });
-        if (userByUsername) return res.status(400).send({ message: 'Username already taken' });
+        if (userByUsername) return res.send({ message: 'Username already taken' });
 
         // Generate and send verification code
         const verificationCode = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit code
@@ -138,7 +138,7 @@ router.post('/send-code', async (req: Request, res: Response) => {
 */
 router.post('/verify-code', async (req: Request, res: Response) => {
     const { username, email, password, code } = req.body;
-    console.log(username, email, password, code);
+    if (!username || !email || !password || !code) return res.send({ message: 'All fields required' });
 
     try {
 
@@ -177,15 +177,15 @@ router.post('/verify-code', async (req: Request, res: Response) => {
 */
 router.post('/login', async (req: Request, res: Response) => {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).send({ message: 'Email and password required' });
+    if (!email || !password) return res.send({ message: 'Email and password required' });
 
     try {
         const user: IUserDocument | null = await User.findOne({ email: email });
 
-        if (!user) return res.status(400).send({ message: 'Invalid email or password' });
+        if (!user) return res.send({ message: 'Invalid email or password' });
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) return res.status(400).send({ message: 'Invalid email or password' });
+        if (!isPasswordValid) return res.send({ message: 'Invalid email or password' });
 
         const accessToken = await generateAccessToken(user);
         const refreshToken = await generateRefreshToken(user);
@@ -200,12 +200,12 @@ router.post('/login', async (req: Request, res: Response) => {
 // Log out by removing refresh token from database
 router.post('/logout', async (req: Request, res: Response) => {
     const { userId } = req.body;
-    if (!userId) return res.status(400).send({ message: 'Refresh token required' });
+    if (!userId) return res.send({ message: 'Refresh token required' });
 
     try {
         const user = await User.findById(userId);
 
-        if (!user) return res.status(400).send({ message: 'Invalid refresh token' });
+        if (!user) return res.send({ message: 'Invalid refresh token' });
 
         user.refreshTokens = [];
         await user.save();

@@ -26,5 +26,5 @@ const connection = async () => {
         console.log(err);
     }
 };
-connection();
+await connection();
 
