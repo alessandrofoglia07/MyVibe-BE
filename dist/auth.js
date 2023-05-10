@@ -68,19 +68,8 @@ export const verifyAccessToken = (req, res, next) => {
         return res.status(401).send({ message: 'Access token not found' });
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
         if (err) {
-            if (err.name === 'TokenExpiredError') {
-                const refreshToken = req.cookies.refreshToken;
-                if (!refreshToken)
-                    return res.status(401).send({ message: 'Refresh token not found' });
-                jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, user) => {
-                    if (err)
-                        return res.status(403).send({ message: 'Invalid refresh token' });
-                    const userId = user.userId;
-                    await generateAccessToken(userId);
-                    req.userId = userId;
-                    next();
-                });
-            }
+            console.log(err);
+            return res.send({ message: 'Invalid access token' });
         }
         else {
             req.userId = user.userId;
@@ -109,6 +98,7 @@ router.post('/send-code', async (req, res) => {
         // Generate and send verification code
         const verificationCode = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit code
         sendEmail(email, 'MyVibe - Verification Code', `Your verification code is: ${verificationCode}`);
+        await VerificationCode.deleteMany({ email: email });
         const verificationCodeDocument = new VerificationCode({
             username,
             email,
@@ -133,13 +123,14 @@ router.post('/send-code', async (req, res) => {
 */
 router.post('/verify-code', async (req, res) => {
     const { username, email, password, code } = req.body;
+    console.log(username, email, password, code);
     try {
         // Check if code is valid
         const document = await VerificationCode.findOne({ email: email });
         if (!document)
-            return res.status(400).send({ message: 'Invalid verification code' });
+            return res.send({ message: 'Invalid verification code' });
         if (document.code.toString() !== code)
-            return res.status(400).send({ message: 'Invalid verification code' });
+            return res.send({ message: 'Invalid verification code' });
         document.deleteOne();
         const hashedPassword = await bcrypt.hash(password, 10);
         const user = new User({
@@ -179,7 +170,7 @@ router.post('/login', async (req, res) => {
             return res.status(400).send({ message: 'Invalid email or password' });
         const accessToken = await generateAccessToken(user);
         const refreshToken = await generateRefreshToken(user);
-        res.status(200).send({ accessToken, refreshToken });
+        res.status(200).send({ accessToken, refreshToken, message: 'Login successful' });
     }
     catch (err) {
         console.log(err);
@@ -205,7 +196,8 @@ router.post('/logout', async (req, res) => {
     }
 });
 // Get new access token using refresh token
-router.post('/refresh', async (req, res) => {
+// To use: When could not get access to protected route, send refresh token to this route to get new access token
+router.post('/refresh-token', async (req, res) => {
     const { refreshToken } = req.body;
     try {
         const user = await User.findOne({ refreshTokens: refreshToken });

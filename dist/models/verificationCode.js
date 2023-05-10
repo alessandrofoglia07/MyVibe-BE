@@ -3,7 +3,6 @@ const VerificationCodeSchema = new Schema({
     username: {
         type: String,
         required: true,
-        unique: true,
         trim: true,
         minlength: 3,
         maxlength: 20
@@ -11,7 +10,6 @@ const VerificationCodeSchema = new Schema({
     email: {
         type: String,
         required: true,
-        unique: true,
         trim: true,
         minlength: 5,
         maxlength: 50
