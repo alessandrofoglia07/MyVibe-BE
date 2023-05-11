@@ -52,6 +52,10 @@ const UserSchema = new Schema({
     postsIDs: {
         type: [String],
         required: true
+    },
+    forgotPassword: {
+        type: Boolean,
+        default: false
     }
 });
 const User = model('User', UserSchema);

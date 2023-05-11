@@ -13,6 +13,7 @@ export interface IUser {
     accessToken?: string;
     refreshTokens?: string[];
     postsIDs: string[];
+    forgotPassword?: boolean;
 }
 
 export interface IUserDocument extends IUser, Document { }
@@ -71,6 +72,10 @@ const UserSchema = new Schema<IUserDocument>({
     postsIDs: {
         type: [String],
         required: true
+    },
+    forgotPassword: {
+        type: Boolean,
+        default: false
     }
 });
 

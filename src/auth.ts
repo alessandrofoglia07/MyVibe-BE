@@ -223,15 +223,16 @@ router.post('/refresh-token', async (req: Request, res: Response) => {
     const { refreshToken } = req.body;
 
     try {
-        const user = await User.findOne({ refreshTokens: refreshToken });
-
-        if (!user) return res.status(403).send({ message: 'Invalid refresh token' });
-
-        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!, async (err: any, user: any) => {
+        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!, async (err: any, decoded: any) => {
             if (err) {
                 console.log(err);
                 return res.status(403).send({ message: 'Invalid refresh token' });
             }
+
+            const userId = decoded.userId;
+            const user = await User.findById(userId);
+
+            if (!user) return res.status(403).send({ message: 'Invalid refresh token' });
 
             const accessToken = await generateAccessToken(user);
             res.send({ accessToken });
@@ -239,6 +240,41 @@ router.post('/refresh-token', async (req: Request, res: Response) => {
     } catch (err) {
         console.log(err);
         res.status(500).send({ message: 'Internal server error' });
+    }
+});
+
+router.post('/forgotPassword', async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    if (!email) return res.send({ message: 'Email not found' });
+
+    try {
+        const user = await User.findOne({ email: email });
+
+        if (!user) return res.send({ message: 'Email not found' });
+
+        user.forgotPassword = true;
+        await user.save();
+
+        sendEmail(email, 'MyVibe - Reset Password', `Click this link to reset your password: http://localhost:3000/resetPassword/${user._id}`);
+        res.send({ message: 'Email sent' });
+    } catch (err) {
+        console.log(err);
+    }
+});
+
+router.get('/checkResetPassword/:userId', async (req: Request, res: Response) => {
+    const { userId } = req.params;
+
+    try {
+        const user = await User.findById(userId);
+
+        if (!user) return res.send({ message: 'Invalid user' });
+        if (!user.forgotPassword) return res.send({ message: 'Invalid user' });
+
+        res.send({ message: 'Valid user' });
+    } catch (err) {
+        console.log(err);
     }
 });
 
