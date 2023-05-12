@@ -50,7 +50,7 @@ const generateAccessToken = async (user) => {
  * - Use case: after a user has successfully authenticated with valid credentials
  */
 const generateRefreshToken = async (user) => {
-    const refreshToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET);
+    const refreshToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '90d' });
     user.refreshTokens?.push(refreshToken);
     await user.save();
     return refreshToken;
@@ -95,6 +95,10 @@ router.post('/send-code', async (req, res) => {
         const userByUsername = await User.findOne({ username: username });
         if (userByUsername)
             return res.send({ message: 'Username already taken' });
+        // Check if password is valid
+        const passRegex = /^(?=.*\d).{6,16}$/;
+        if (!passRegex.test(password))
+            return res.send({ message: 'Password must be 6-16 characters long, and contain at least a letter and a number' });
         // Generate and send verification code
         const verificationCode = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit code
         sendEmail(email, 'MyVibe - Verification Code', `Your verification code is: ${verificationCode}`);
@@ -171,7 +175,7 @@ router.post('/login', async (req, res) => {
             return res.send({ message: 'Invalid email or password' });
         const accessToken = await generateAccessToken(user);
         const refreshToken = await generateRefreshToken(user);
-        res.status(200).send({ accessToken, refreshToken, message: 'Login successful' });
+        res.status(200).send({ accessToken, refreshToken, userId: user._id, email: email, message: 'Login successful' });
     }
     catch (err) {
         console.log(err);
@@ -241,10 +245,28 @@ router.get('/checkResetPassword/:userId', async (req, res) => {
     try {
         const user = await User.findById(userId);
         if (!user)
-            return res.send({ message: 'Invalid user' });
+            return res.send({ forgotPassword: false });
         if (!user.forgotPassword)
+            return res.send({ forgotPassword: false });
+        res.send({ forgotPassword: true });
+    }
+    catch (err) {
+        console.log(err);
+    }
+});
+router.post('/changePassword', async (req, res) => {
+    const { id, newPassword } = req.body;
+    if (!id || !newPassword)
+        return res.send({ message: 'All fields required' });
+    try {
+        const user = await User.findById(id);
+        if (!user)
             return res.send({ message: 'Invalid user' });
-        res.send({ message: 'Valid user' });
+        const hash = await bcrypt.hash(newPassword, 10);
+        user.password = hash;
+        user.forgotPassword = false;
+        await user.save();
+        res.send({ message: 'Password changed' });
     }
     catch (err) {
         console.log(err);

@@ -48,7 +48,7 @@ const sendEmail = (recipient: string, subject: string, text: string) => {
  * - Use case: after a user has successfully authenticated with valid credentials
  */
 const generateAccessToken = async (user: IUserDocument) => {
-    const token = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET!, { expiresIn: '15m' });
+    const token = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET as string, { expiresIn: '15m' });
     user.accessToken = token;
     await user.save();
     return token;
@@ -58,7 +58,7 @@ const generateAccessToken = async (user: IUserDocument) => {
  * - Use case: after a user has successfully authenticated with valid credentials
  */
 const generateRefreshToken = async (user: IUserDocument) => {
-    const refreshToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET!);
+    const refreshToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET as string, { expiresIn: '90d' });
     user.refreshTokens?.push(refreshToken);
     await user.save();
     return refreshToken;
@@ -107,6 +107,10 @@ router.post('/send-code', async (req: Request, res: Response) => {
         // Check if username is already taken
         const userByUsername = await User.findOne({ username: username });
         if (userByUsername) return res.send({ message: 'Username already taken' });
+
+        // Check if password is valid
+        const passRegex = /^(?=.*\d).{6,16}$/;
+        if (!passRegex.test(password)) return res.send({ message: 'Password must be 6-16 characters long, and contain at least a letter and a number' });
 
         // Generate and send verification code
         const verificationCode = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit code
@@ -190,7 +194,7 @@ router.post('/login', async (req: Request, res: Response) => {
         const accessToken = await generateAccessToken(user);
         const refreshToken = await generateRefreshToken(user);
 
-        res.status(200).send({ accessToken, refreshToken, message: 'Login successful' });
+        res.status(200).send({ accessToken, refreshToken, userId: user._id, email: email, message: 'Login successful' });
     } catch (err) {
         console.log(err);
         res.status(500).send({ message: 'Internal server error' });
@@ -223,7 +227,7 @@ router.post('/refresh-token', async (req: Request, res: Response) => {
     const { refreshToken } = req.body;
 
     try {
-        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!, async (err: any, decoded: any) => {
+        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET as string, async (err: any, decoded: any) => {
             if (err) {
                 console.log(err);
                 return res.status(403).send({ message: 'Invalid refresh token' });
@@ -269,10 +273,31 @@ router.get('/checkResetPassword/:userId', async (req: Request, res: Response) =>
     try {
         const user = await User.findById(userId);
 
-        if (!user) return res.send({ message: 'Invalid user' });
-        if (!user.forgotPassword) return res.send({ message: 'Invalid user' });
+        if (!user) return res.send({ forgotPassword: false });
+        if (!user.forgotPassword) return res.send({ forgotPassword: false });
 
-        res.send({ message: 'Valid user' });
+        res.send({ forgotPassword: true });
+    } catch (err) {
+        console.log(err);
+    }
+});
+
+router.post('/changePassword', async (req: Request, res: Response) => {
+    const { id, newPassword } = req.body;
+
+    if (!id || !newPassword) return res.send({ message: 'All fields required' });
+
+    try {
+        const user = await User.findById(id);
+
+        if (!user) return res.send({ message: 'Invalid user' });
+
+        const hash = await bcrypt.hash(newPassword, 10);
+        user.password = hash;
+        user.forgotPassword = false;
+        await user.save();
+
+        res.send({ message: 'Password changed' });
     } catch (err) {
         console.log(err);
     }
