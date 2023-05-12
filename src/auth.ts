@@ -276,6 +276,9 @@ router.get('/checkResetPassword/:userId', async (req: Request, res: Response) =>
         if (!user) return res.send({ forgotPassword: false });
         if (!user.forgotPassword) return res.send({ forgotPassword: false });
 
+        user.forgotPassword = false;
+        await user.save();
+
         res.send({ forgotPassword: true });
     } catch (err) {
         console.log(err);
