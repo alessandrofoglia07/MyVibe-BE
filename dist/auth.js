@@ -42,17 +42,13 @@ const sendEmail = (recipient, subject, text) => {
  */
 const generateAccessToken = async (user) => {
     const token = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
-    user.accessToken = token;
-    await user.save();
     return token;
 };
 /** Generate a refresh for a user and save it to the database
  * - Use case: after a user has successfully authenticated with valid credentials
  */
 const generateRefreshToken = async (user) => {
-    const refreshToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '90d' });
-    user.refreshTokens?.push(refreshToken);
-    await user.save();
+    const refreshToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '30 days' });
     return refreshToken;
 };
 /** Verify access token
@@ -176,24 +172,6 @@ router.post('/login', async (req, res) => {
         const accessToken = await generateAccessToken(user);
         const refreshToken = await generateRefreshToken(user);
         res.status(200).send({ accessToken, refreshToken, userId: user._id, email: email, message: 'Login successful' });
-    }
-    catch (err) {
-        console.log(err);
-        res.status(500).send({ message: 'Internal server error' });
-    }
-});
-// Log out by removing refresh token from database
-router.post('/logout', async (req, res) => {
-    const { userId } = req.body;
-    if (!userId)
-        return res.send({ message: 'Refresh token required' });
-    try {
-        const user = await User.findById(userId);
-        if (!user)
-            return res.send({ message: 'Invalid refresh token' });
-        user.refreshTokens = [];
-        await user.save();
-        res.status(200).send({ message: 'Logged out' });
     }
     catch (err) {
         console.log(err);

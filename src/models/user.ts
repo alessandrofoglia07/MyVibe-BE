@@ -10,8 +10,6 @@ export interface IUser {
         bio?: string;
         profilePicture: Buffer;
     };
-    accessToken?: string;
-    refreshTokens?: string[];
     postsIDs: string[];
     forgotPassword?: boolean;
 }
@@ -62,12 +60,6 @@ const UserSchema = new Schema<IUserDocument>({
         profilePicture: {
             type: Buffer
         }
-    },
-    accessToken: {
-        type: String
-    },
-    refreshTokens: {
-        type: [String]
     },
     postsIDs: {
         type: [String],

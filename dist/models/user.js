@@ -43,12 +43,6 @@ const UserSchema = new Schema({
             type: Buffer
         }
     },
-    accessToken: {
-        type: String
-    },
-    refreshTokens: {
-        type: [String]
-    },
     postsIDs: {
         type: [String],
         required: true
