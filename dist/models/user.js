@@ -44,13 +44,19 @@ const UserSchema = new Schema({
         }
     },
     postsIDs: {
-        type: [String],
-        required: true
+        type: [Schema.Types.ObjectId],
+        ref: "Post"
+    },
+    friendsIDs: {
+        type: [Schema.Types.ObjectId],
+        ref: "User"
     },
     forgotPassword: {
         type: Boolean,
         default: false
     }
+}, {
+    timestamps: true
 });
 const User = model('User', UserSchema);
 export default User;

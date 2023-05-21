@@ -10,7 +10,8 @@ export interface IUser {
         bio?: string;
         profilePicture: Buffer;
     };
-    postsIDs: string[];
+    postsIDs?: Schema.Types.ObjectId[];
+    friendsIDs?: Schema.Types.ObjectId[];
     forgotPassword?: boolean;
 }
 
@@ -37,7 +38,6 @@ const UserSchema = new Schema<IUserDocument>({
         type: String,
         required: true,
         trim: true,
-
     },
     info: {
         firstName: {
@@ -62,13 +62,19 @@ const UserSchema = new Schema<IUserDocument>({
         }
     },
     postsIDs: {
-        type: [String],
-        required: true
+        type: [Schema.Types.ObjectId],
+        ref: "Post"
+    },
+    friendsIDs: {
+        type: [Schema.Types.ObjectId],
+        ref: "User"
     },
     forgotPassword: {
         type: Boolean,
         default: false
     }
+}, {
+    timestamps: true
 });
 
 const User = model<IUserDocument>('User', UserSchema);

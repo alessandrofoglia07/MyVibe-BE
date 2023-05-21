@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import User, { IUser, IUserDocument } from './models/user.js';
+import User, { IUserDocument } from './models/user.js';
 import VerificationCode from './models/verificationCode.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
