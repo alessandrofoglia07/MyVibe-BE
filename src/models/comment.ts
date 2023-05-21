@@ -1,16 +1,17 @@
 import { Document, Schema, model } from "mongoose";
 
 export interface IComment {
-    author: Schema.Types.ObjectId;
+    author: string;
     content: string;
-    likes: Schema.Types.ObjectId[];
+    likes: string[];
+    postId: string;
 }
 
 export interface ICommentDocument extends IComment, Document { }
 
 const CommentSchema = new Schema<ICommentDocument>({
     author: {
-        type: Schema.Types.ObjectId,
+        type: String,
         ref: "User",
         required: true
     },
@@ -18,12 +19,18 @@ const CommentSchema = new Schema<ICommentDocument>({
         type: String,
         required: true,
         trim: true,
-        maxlength: 1000
+        maxlength: 300
     },
     likes: [{
-        type: [Schema.Types.ObjectId],
-        ref: "User"
-    }]
+        type: [String],
+        ref: "User",
+        default: []
+    }],
+    postId: {
+        type: String,
+        ref: "Post",
+        required: true
+    }
 }, {
     timestamps: true
 });

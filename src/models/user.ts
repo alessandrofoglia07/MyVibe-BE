@@ -11,7 +11,8 @@ export interface IUser {
         profilePicture: Buffer;
     };
     postsIDs?: Schema.Types.ObjectId[];
-    friendsIDs?: Schema.Types.ObjectId[];
+    followingIDs?: Schema.Types.ObjectId[];
+    followersIDs?: Schema.Types.ObjectId[];
     forgotPassword?: boolean;
 }
 
@@ -63,11 +64,18 @@ const UserSchema = new Schema<IUserDocument>({
     },
     postsIDs: {
         type: [Schema.Types.ObjectId],
-        ref: "Post"
+        ref: "Post",
+        default: []
     },
-    friendsIDs: {
+    followingIDs: {
         type: [Schema.Types.ObjectId],
-        ref: "User"
+        ref: "User",
+        default: []
+    },
+    followersIDs: {
+        type: [Schema.Types.ObjectId],
+        ref: "User",
+        default: []
     },
     forgotPassword: {
         type: Boolean,

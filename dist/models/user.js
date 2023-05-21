@@ -45,11 +45,18 @@ const UserSchema = new Schema({
     },
     postsIDs: {
         type: [Schema.Types.ObjectId],
-        ref: "Post"
+        ref: "Post",
+        default: []
     },
-    friendsIDs: {
+    followingIDs: {
         type: [Schema.Types.ObjectId],
-        ref: "User"
+        ref: "User",
+        default: []
+    },
+    followersIDs: {
+        type: [Schema.Types.ObjectId],
+        ref: "User",
+        default: []
     },
     forgotPassword: {
         type: Boolean,

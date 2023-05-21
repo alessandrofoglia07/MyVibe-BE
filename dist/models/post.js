@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose";
 const PostSchema = new Schema({
     author: {
-        type: Schema.Types.ObjectId,
+        type: String,
         ref: "User",
         required: true
     },
@@ -9,15 +9,17 @@ const PostSchema = new Schema({
         type: String,
         required: true,
         trim: true,
-        maxlength: 1000
+        maxlength: 500
     },
     likes: [{
-            type: [Schema.Types.ObjectId],
-            ref: "User"
+            type: [String],
+            ref: "User",
+            default: []
         }],
     comments: [{
-            type: Schema.Types.ObjectId,
-            ref: "Comment"
+            type: String,
+            ref: "Comment",
+            default: []
         }]
 }, {
     timestamps: true
