@@ -60,14 +60,14 @@ const generateRefreshToken = async (user: IUserDocument) => {
     return refreshToken;
 };
 
-interface authRequest extends Request {
-    userId?: any;
+export interface AuthRequest extends Request {
+    userId?: string;
 }
 
 /** Verify access token
  * - Use case: for protected routes that require a valid access token
  */
-export const verifyAccessToken = (req: authRequest, res: Response, next: NextFunction) => {
+export const verifyAccessToken = (req: AuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
     if (!token) return res.status(401).send({ message: 'Access token not found' });
