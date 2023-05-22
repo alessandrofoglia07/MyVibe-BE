@@ -63,18 +63,21 @@ router.post('/comments/create/:id', async (req, res) => {
     if (content.length < 20 || content.length > 300) {
         return res.send({ message: 'Comment must be between 20 and 300 characters' });
     }
+    if (!postId) {
+        return res.send({ message: 'Post not found' });
+    }
     try {
         // finds post by id
         const post = Post.findById(postId);
         // if post doesn't exist, return error
         if (!post) {
-            return res.status(404).send({ message: 'Post not found' });
+            return res.send({ message: 'Post not found' });
         }
         // creates new comment and saves it to the database
         const comment = new Comment({
             author: authorId,
             content,
-            post: postId
+            postId
         });
         await comment.save();
         res.status(201).send({ comment, message: 'Comment created' });
