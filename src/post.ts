@@ -24,12 +24,23 @@ router.post('/create', async (req: AuthRequest, res: Response) => {
     }
 
     try {
+
+        // finds user by id
+        const user = await User.findById(authorId);
+
+        if (!user) return res.send({ message: 'User not found' });
+
         // creates new post and saves it to the database
         const post = new Post({
             author: authorId,
+            authorUsername: user.username,
             content
         });
         await post.save();
+
+        // adds post id to user's postsIDs array and saves it to the database
+        user.postsIDs?.push(post._id);
+        await user.save();
 
         res.status(201).send({ post, message: 'Post created' });
     } catch (err) {
@@ -83,12 +94,12 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
 
     try {
         // finds post by id
-        const post = Post.findById(postId);
+        const post = await Post.findById(postId);
 
         // if post doesn't exist, return error
         if (!post) {
             return res.send({ message: 'Post not found' });
-        }
+        };
 
         // creates new comment and saves it to the database
         const comment = new Comment({
@@ -97,6 +108,10 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
             postId
         });
         await comment.save();
+
+        // adds comment to post
+        post.comments.push(comment._id);
+        await post.save();
 
         res.status(201).send({ comment, message: 'Comment created' });
     } catch (err) {
@@ -148,7 +163,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
         }
 
         // finds post made by people user follows
-        const posts = await Post.find({ author: { $in: user.followingIDs } }).sort({ createdAt: -1 });
+        const posts = await Post.find({ author: { $in: user.followingIDs } }).sort({ createdAt: -1 }).limit(50);
 
         res.send({ posts });
     } catch (err) {

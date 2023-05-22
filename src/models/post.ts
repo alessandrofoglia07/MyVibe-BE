@@ -8,6 +8,7 @@ comments: array of comments' _id
 */
 export interface IPost {
     author: string;
+    authorUsername: string;
     content: string;
     likes: string[];
     comments: string[];
@@ -17,6 +18,11 @@ export interface IPostDocument extends IPost, Document { }
 
 const PostSchema = new Schema<IPostDocument>({
     author: {
+        type: String,
+        ref: "User",
+        required: true
+    },
+    authorUsername: {
         type: String,
         ref: "User",
         required: true
