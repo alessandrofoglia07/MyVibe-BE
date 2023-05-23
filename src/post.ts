@@ -59,12 +59,13 @@ router.post('/like/:id', async (req: AuthRequest, res: Response) => {
 
         // if post doesn't exist, return error
         if (!post) {
-            return res.status(404).send({ message: 'Post not found' });
+            return res.send({ message: 'Post not found' });
         }
 
         // if user has already liked the post, unlike it
         if (post.likes.includes(userId!)) {
-            post.likes = post.likes.filter(id => id !== userId);
+            post.likes = post.likes.filter(id => id === userId);
+            await post.save();
             return res.send({ post, message: 'Post unliked' });
         }
 
@@ -72,7 +73,7 @@ router.post('/like/:id', async (req: AuthRequest, res: Response) => {
         post.likes.push(userId!);
         await post.save();
 
-        res.send({ post, message: 'Post liked' });
+        res.send({ post, message: 'Post liked', });
     } catch (err) {
         console.log(err);
     }
@@ -159,11 +160,16 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 
         // if user doesn't exist, return error
         if (!user) {
-            return res.status(404).send({ message: 'User not found' });
+            return res.send({ message: 'User not found' });
         }
 
         // finds post made by people user follows
-        const posts = await Post.find({ author: { $in: user.followingIDs } }).sort({ createdAt: -1 }).limit(50);
+        const posts = (await Post.find({ author: { $in: user.followingIDs } }).sort({ createdAt: -1 }).limit(50)).map(post => {
+            return {
+                ...post.toObject(),
+                liked: post.likes.includes(userId!)
+            };
+        });
 
         res.send({ posts });
     } catch (err) {
