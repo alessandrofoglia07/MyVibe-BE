@@ -181,7 +181,6 @@ router.post('/login', async (req: Request, res: Response) => {
 
     try {
         const user: IUserDocument | null = await User.findOne({ email: email });
-
         if (!user) return res.send({ message: 'Invalid email or password' });
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -190,7 +189,7 @@ router.post('/login', async (req: Request, res: Response) => {
         const accessToken = await generateAccessToken(user);
         const refreshToken = await generateRefreshToken(user);
 
-        res.status(200).send({ accessToken, refreshToken, userId: user._id, email: email, message: 'Login successful' });
+        res.status(200).send({ accessToken, refreshToken, userId: user._id, email: email, username: user.username, message: 'Login successful' });
     } catch (err) {
         console.log(err);
         res.status(500).send({ message: 'Internal server error' });
@@ -215,7 +214,7 @@ router.post('/refresh-token', async (req: Request, res: Response) => {
             if (!user) return res.status(403).send({ message: 'Invalid refresh token' });
 
             const accessToken = await generateAccessToken(user);
-            res.send({ accessToken });
+            res.send({ accessToken, message: 'Token refreshed' });
         });
     } catch (err) {
         console.log(err);

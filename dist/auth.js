@@ -171,7 +171,7 @@ router.post('/login', async (req, res) => {
             return res.send({ message: 'Invalid email or password' });
         const accessToken = await generateAccessToken(user);
         const refreshToken = await generateRefreshToken(user);
-        res.status(200).send({ accessToken, refreshToken, userId: user._id, email: email, message: 'Login successful' });
+        res.status(200).send({ accessToken, refreshToken, userId: user._id, email: email, username: user.username, message: 'Login successful' });
     }
     catch (err) {
         console.log(err);
@@ -193,7 +193,7 @@ router.post('/refresh-token', async (req, res) => {
             if (!user)
                 return res.status(403).send({ message: 'Invalid refresh token' });
             const accessToken = await generateAccessToken(user);
-            res.send({ accessToken });
+            res.send({ accessToken, message: 'Token refreshed' });
         });
     }
     catch (err) {
