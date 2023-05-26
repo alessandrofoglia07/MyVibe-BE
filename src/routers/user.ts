@@ -1,4 +1,4 @@
-import express, { Response } from 'express';
+import express, { Response, Router } from 'express';
 import cors from 'cors';
 import User from '../models/user.js';
 import { AuthRequest, verifyAccessToken } from './auth.js';
@@ -12,26 +12,6 @@ router.use(cors());
 router.use(express.json());
 router.use(verifyAccessToken);
 
-// Gets a user's profile
-router.get('/:username', async (req: AuthRequest, res: Response) => {
-    const { username } = req.params;
-
-    try {
-        const user = await User.findOne({ username });
-
-        if (!user) {
-            return res.status(404).send({ message: 'User not found' });
-        }
-
-        // destructure user object
-        const { _id, email, info, postsIDs, followingIDs, followersIDs } = user;
-
-        res.send({ _id, username, email, info, postsIDs, followingIDs, followersIDs, message: 'User found' });
-    } catch (err) {
-        console.log(err);
-    }
-});
-
 // Gets all people user follows
 router.get('/following', async (req: AuthRequest, res: Response) => {
     const userId = req.userId;
@@ -40,13 +20,34 @@ router.get('/following', async (req: AuthRequest, res: Response) => {
         const user = await User.findById(userId);
 
         if (!user) {
-            return res.status(404).send({ message: 'User not found' });
+            return res.status(400).send({ message: 'User not found' });
         }
 
         const following: any[] = await User.find({ _id: { $in: user.followingIDs } });
         const usernames = following.map(user => user.username);
 
         res.send({ usernames });
+    } catch (err) {
+        console.log(err);
+    }
+});
+
+// Gets a user's profile
+router.get('/profile/:username', async (req: AuthRequest, res: Response) => {
+    const { username } = req.params;
+
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            console.log(1);
+            return res.send({ message: 'User not found' });
+        }
+
+        // destructure user object
+        const { _id, email, info, postsIDs, followingIDs, followersIDs } = user;
+
+        res.send({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, } });
     } catch (err) {
         console.log(err);
     }
