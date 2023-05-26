@@ -2,9 +2,9 @@ import express, { Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { verifyAccessToken, AuthRequest } from './auth.js';
-import Post from './models/post.js';
-import Comment from './models/comment.js';
-import User from './models/user.js';
+import Post from '../models/post.js';
+import Comment from '../models/comment.js';
+import User from '../models/user.js';
 
 dotenv.config();
 
@@ -172,26 +172,6 @@ router.get('/', async (req: AuthRequest, res: Response) => {
         });
 
         res.send({ posts });
-    } catch (err) {
-        console.log(err);
-    }
-});
-
-// Gets all people user follows
-router.get('/following', async (req: AuthRequest, res: Response) => {
-    const userId = req.userId;
-
-    try {
-        const user = await User.findById(userId);
-
-        if (!user) {
-            return res.status(404).send({ message: 'User not found' });
-        }
-
-        const following: any[] = await User.find({ _id: { $in: user.followingIDs } });
-        const usernames = following.map(user => user.username);
-
-        res.send({ usernames });
     } catch (err) {
         console.log(err);
     }

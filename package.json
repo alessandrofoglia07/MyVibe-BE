@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "",
     "type": "module",
-    "main": "index.js",
+    "main": "",
     "scripts": {
         "start:ts": "tsc -w",
         "start:js": "nodemon dist/index.js",
