@@ -16,7 +16,11 @@ export interface IUser {
     forgotPassword?: boolean;
 }
 
-export interface IUserDocument extends IUser, Document { }
+export interface IUserDocument extends IUser, Document {
+    _id: Schema.Types.ObjectId;
+    createdAt: Date;
+    updatedAt: Date;
+}
 
 const UserSchema = new Schema<IUserDocument>({
     username: {

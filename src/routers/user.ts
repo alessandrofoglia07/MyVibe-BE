@@ -40,14 +40,13 @@ router.get('/profile/:username', async (req: AuthRequest, res: Response) => {
         const user = await User.findOne({ username });
 
         if (!user) {
-            console.log(1);
             return res.send({ message: 'User not found' });
         }
 
         // destructure user object
-        const { _id, email, info, postsIDs, followingIDs, followersIDs } = user;
+        const { _id, email, info, postsIDs, followingIDs, followersIDs, createdAt } = user;
 
-        res.send({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, } });
+        res.send({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt } });
     } catch (err) {
         console.log(err);
     }
