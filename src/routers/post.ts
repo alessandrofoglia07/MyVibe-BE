@@ -97,14 +97,23 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
         // finds post by id
         const post = await Post.findById(postId);
 
+        // finds user by id
+        const user = await User.findById(authorId);
+
         // if post doesn't exist, return error
         if (!post) {
             return res.send({ message: 'Post not found' });
         };
 
+        // if user doesn't exist, return error
+        if (!user) {
+            return res.send({ message: 'User not found' });
+        };
+
         // creates new comment and saves it to the database
         const comment = new Comment({
             author: authorId,
+            authorUsername: user.username,
             content,
             postId
         });
@@ -136,7 +145,8 @@ router.post('/comments/like/:id', async (req: AuthRequest, res: Response) => {
 
         // if user has already liked the comment, unlike it
         if (comment.likes.includes(userId!)) {
-            comment.likes = comment.likes.filter(id => id !== userId);
+            comment.likes = comment.likes.filter(id => id === userId);
+            await comment.save();
             return res.send({ comment, message: 'Comment unliked' });
         }
 
@@ -145,6 +155,27 @@ router.post('/comments/like/:id', async (req: AuthRequest, res: Response) => {
         await comment.save();
 
         res.send({ comment, message: 'Comment liked' });
+    } catch (err) {
+        console.log(err);
+    }
+});
+
+router.get('/comments/:postId', async (req: AuthRequest, res: Response) => {
+    const postId = req.params.postId;
+
+    try {
+        if (!postId) return res.send({ message: 'Post not found' });
+
+        const comments = await Comment.find({ postId }).sort({ createdAt: -1 }).limit(50);
+
+        const commentsWithLikes = comments.map(comment => {
+            return {
+                ...comment.toObject(),
+                liked: comment.likes.includes(req.userId!)
+            };
+        });
+
+        res.send({ comments: commentsWithLikes });
     } catch (err) {
         console.log(err);
     }

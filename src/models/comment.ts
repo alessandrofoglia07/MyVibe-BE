@@ -2,6 +2,7 @@ import { Document, Schema, model } from "mongoose";
 
 export interface IComment {
     author: string;
+    authorUsername: string;
     content: string;
     likes: string[];
     postId: string;
@@ -11,6 +12,11 @@ export interface ICommentDocument extends IComment, Document { }
 
 const CommentSchema = new Schema<ICommentDocument>({
     author: {
+        type: String,
+        ref: "User",
+        required: true
+    },
+    authorUsername: {
         type: String,
         ref: "User",
         required: true

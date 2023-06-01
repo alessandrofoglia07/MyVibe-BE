@@ -5,6 +5,11 @@ const CommentSchema = new Schema({
         ref: "User",
         required: true
     },
+    authorUsername: {
+        type: String,
+        ref: "User",
+        required: true
+    },
     content: {
         type: String,
         required: true,
