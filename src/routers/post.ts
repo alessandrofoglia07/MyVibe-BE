@@ -162,11 +162,14 @@ router.post('/comments/like/:id', async (req: AuthRequest, res: Response) => {
 
 router.get('/comments/:postId', async (req: AuthRequest, res: Response) => {
     const postId = req.params.postId;
+    const page = req.query.page ? parseInt(req.query.page.toString()) : 1;
+    const limit = 5;
+    const skip = (page - 1) * limit;
 
     try {
         if (!postId) return res.send({ message: 'Post not found' });
 
-        const comments = await Comment.find({ postId }).sort({ createdAt: -1 }).limit(50);
+        const comments = await Comment.find({ postId }).sort({ createdAt: -1 }).skip(skip).limit(limit);
 
         const commentsWithLikes = comments.map(comment => {
             return {
