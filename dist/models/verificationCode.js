@@ -18,8 +18,7 @@ const VerificationCodeSchema = new Schema({
         type: Number,
         required: true,
         trim: true,
-        minlength: 6,
-        maxlength: 6
+        length: 6
     }
 });
 const VerificationCode = model('VerificationCode', VerificationCodeSchema);

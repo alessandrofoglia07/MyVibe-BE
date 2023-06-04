@@ -27,8 +27,7 @@ const VerificationCodeSchema = new Schema<IVerificationCodeDocument>({
         type: Number,
         required: true,
         trim: true,
-        minlength: 6,
-        maxlength: 6
+        length: 6
     }
 });
 

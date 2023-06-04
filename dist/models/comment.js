@@ -14,7 +14,8 @@ const CommentSchema = new Schema({
         type: String,
         required: true,
         trim: true,
-        maxlength: 300
+        minlength: 10,
+        maxlength: 500
     },
     likes: [{
             type: [String],
