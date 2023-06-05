@@ -5,9 +5,10 @@
     "type": "module",
     "main": "",
     "scripts": {
-        "start:ts": "tsc -w",
-        "start:js": "nodemon dist/index.js",
-        "start": "concurrently npm:start:*"
+        "dev:ts": "tsc -w",
+        "dev:js": "nodemon dist/index.js",
+        "dev": "concurrently npm:dev:*",
+        "start": "node dist/index.js"
     },
     "keywords": [],
     "author": "Alex",

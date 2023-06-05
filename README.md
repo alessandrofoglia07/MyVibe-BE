@@ -24,9 +24,13 @@ The backend is built with NodeJS (Typescript) using:
 
 In the project directory, you can run:
 
-### `npm start`
+### `npm run dev`
 
 Starts the server in development mode. **Note that you need to have installed [nodemon](https://nodemon.io/).**
+
+### `npm start`
+
+Starts the server without nodemon.
 
 <br/><br/><br/>
 

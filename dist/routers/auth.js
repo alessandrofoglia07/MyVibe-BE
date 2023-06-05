@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import cors from 'cors';
 import User from '../models/user.js';
 import VerificationCode from '../models/verificationCode.js';
@@ -7,7 +7,7 @@ import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
 dotenv.config();
-const router = express.Router();
+const router = Router();
 router.use(cors());
 router.use(express.json());
 // Nodemailer setup

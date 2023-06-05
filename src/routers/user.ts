@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 
 dotenv.config();
 
-const router = express.Router();
+const router = Router();
 
 router.use(cors());
 router.use(express.json());

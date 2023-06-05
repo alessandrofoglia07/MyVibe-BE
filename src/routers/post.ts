@@ -1,4 +1,4 @@
-import express, { Response } from 'express';
+import express, { Response, Router } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { verifyAccessToken, AuthRequest } from './auth.js';
@@ -8,7 +8,7 @@ import User from '../models/user.js';
 
 dotenv.config();
 
-const router = express.Router();
+const router = Router();
 
 router.use(cors());
 router.use(express.json());

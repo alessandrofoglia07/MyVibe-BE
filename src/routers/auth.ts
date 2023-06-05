@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction, Router } from 'express';
 import cors from 'cors';
 import User, { IUserDocument } from '../models/user.js';
 import VerificationCode from '../models/verificationCode.js';
@@ -9,7 +9,7 @@ import nodemailer from 'nodemailer';
 
 dotenv.config();
 
-const router = express.Router();
+const router = Router();
 
 router.use(cors());
 router.use(express.json());

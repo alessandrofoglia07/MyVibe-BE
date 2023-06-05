@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Router } from 'express';
 import cors from 'cors';
 import User from '../models/user.js';
 import Post from '../models/post.js';
@@ -6,7 +6,7 @@ import { verifyAccessToken } from './auth.js';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 dotenv.config();
-const router = express.Router();
+const router = Router();
 router.use(cors());
 router.use(express.json());
 router.use(verifyAccessToken);
