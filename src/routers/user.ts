@@ -81,7 +81,7 @@ interface IUserChanged {
 }
 
 // Modifies a user's profile
-router.patch('/profile/:username/edit', async (req: AuthRequest, res: Response) => {
+router.patch('/profile/:username', async (req: AuthRequest, res: Response) => {
     const { username } = req.params;
     const userId = req.userId;
     const changed: IUserChanged = req.body.user;

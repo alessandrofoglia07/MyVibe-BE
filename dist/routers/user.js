@@ -50,7 +50,7 @@ router.get('/profile/:username', async (req, res) => {
     }
 });
 // Modifies a user's profile
-router.patch('/profile/:username/edit', async (req, res) => {
+router.patch('/profile/:username', async (req, res) => {
     const { username } = req.params;
     const userId = req.userId;
     const changed = req.body.user;
