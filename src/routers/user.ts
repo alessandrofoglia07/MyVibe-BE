@@ -69,6 +69,46 @@ router.get('/profile/:username', async (req: AuthRequest, res: Response) => {
     }
 });
 
+interface IUserChanged {
+    _id: string;
+    username: string;
+    email: string;
+    info: any;
+    postsIDs: string[];
+    followingIDs: string[];
+    followersIDs: string[];
+    createdAt: Date;
+}
+
+// Modifies a user's profile
+router.patch('/profile/:username/edit', async (req: AuthRequest, res: Response) => {
+    const { username } = req.params;
+    const userId = req.userId;
+    const changed: IUserChanged = req.body.user;
+
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) {
+            return res.send({ message: 'User not found' });
+        }
+
+        // check if profile is the user's profile
+        if (userId !== user._id.toString()) {
+            return res.send({ message: 'Unauthorized' });
+        }
+
+        // update user info
+        user.info = changed.info;
+        user.username = changed.username;
+        await user.save();
+
+        res.send('User updated');
+    } catch (err) {
+        console.log(err);
+    }
+});
+
 // Gets a user's posts
 router.get('/posts/:username', async (req: AuthRequest, res: Response) => {
     const { username } = req.params;
