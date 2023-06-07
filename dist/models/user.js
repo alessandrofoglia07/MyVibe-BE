@@ -39,7 +39,7 @@ const UserSchema = new Schema({
             maxlength: 100
         },
         profilePicture: {
-            type: Buffer
+            type: String,
         }
     },
     postsIDs: {

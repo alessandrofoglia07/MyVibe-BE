@@ -8,7 +8,7 @@ export interface IUser {
         firstName?: string;
         lastName?: string;
         bio?: string;
-        profilePicture: Buffer;
+        profilePicture: string;
     };
     postsIDs?: Schema.Types.ObjectId[];
     followingIDs?: Schema.Types.ObjectId[];
@@ -62,7 +62,7 @@ const UserSchema = new Schema<IUserDocument>({
             maxlength: 100
         },
         profilePicture: {
-            type: Buffer
+            type: String,
         }
     },
     postsIDs: {

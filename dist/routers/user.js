@@ -5,6 +5,8 @@ import Post from '../models/post.js';
 import { verifyAccessToken } from './auth.js';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import { upload } from '../index.js';
+import path from 'path';
 dotenv.config();
 const router = Router();
 router.use(cors());
@@ -22,6 +24,25 @@ router.get('/following', async (req, res) => {
         const following = await User.find({ _id: { $in: user.followingIDs } });
         const usernames = following.map(user => user.username);
         res.send({ usernames });
+    }
+    catch (err) {
+        console.log(err);
+    }
+});
+// Gets a user's pfp 
+router.get('/pfp/:username', async (req, res) => {
+    const { username } = req.params;
+    try {
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.send({ message: 'User not found' });
+        }
+        if (user.info.profilePicture === '') {
+            return res.send({ message: 'No profile picture' });
+        }
+        const __filename = path.resolve();
+        const imagePath = path.join(__filename, 'images', user.info.profilePicture);
+        res.sendFile(imagePath);
     }
     catch (err) {
         console.log(err);
@@ -64,7 +85,9 @@ router.patch('/profile/:username', async (req, res) => {
             return res.send({ message: 'Unauthorized' });
         }
         // update user info
-        user.info = changed.info;
+        user.info.firstName = changed.info.firstName;
+        user.info.lastName = changed.info.lastName;
+        user.info.bio = changed.info.bio;
         user.username = changed.username;
         await user.save();
         res.send('User updated');
@@ -72,6 +95,38 @@ router.patch('/profile/:username', async (req, res) => {
     catch (err) {
         console.log(err);
     }
+});
+// Modifies a user's profile picture
+router.patch('/profile/:username/uploadPfp', (req, res) => {
+    upload(req, res, async (err) => {
+        if (err) {
+            console.log(err);
+            return res.send({ message: 'Error uploading file' });
+        }
+        if (!req.file) {
+            return res.send({ message: 'No file uploaded' });
+        }
+        const { filename } = req.file;
+        const { username } = req.params;
+        const userId = req.userId;
+        try {
+            const user = await User.findOne({ username });
+            if (!user) {
+                return res.send({ message: 'User not found' });
+            }
+            // check if profile is the user's profile
+            if (userId !== user._id.toString()) {
+                return res.send({ message: 'Unauthorized' });
+            }
+            // update user profile picture
+            user.info.profilePicture = filename;
+            await user.save();
+            res.send({ message: 'Profile picture updated', filename });
+        }
+        catch (err) {
+            console.log(err);
+        }
+    });
 });
 // Gets a user's posts
 router.get('/posts/:username', async (req, res) => {
