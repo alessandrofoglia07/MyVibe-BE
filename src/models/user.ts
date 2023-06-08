@@ -63,6 +63,7 @@ const UserSchema = new Schema<IUserDocument>({
         },
         profilePicture: {
             type: String,
+            default: ''
         }
     },
     postsIDs: {

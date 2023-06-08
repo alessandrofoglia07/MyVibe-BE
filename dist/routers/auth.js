@@ -82,6 +82,15 @@ router.post('/send-code', async (req, res) => {
     const { username, email, password } = req.body;
     if (!username || !email || !password)
         return res.send({ message: 'All fields required' });
+    if (username.length < 3 || username.length > 20)
+        return res.send({ message: 'Username must be 3-20 characters long' });
+    if (email.length < 5 || email.length > 50)
+        return res.send({ message: 'Email must be 5-50 characters long' });
+    if (password.length < 6 || password.length > 16)
+        return res.send({ message: 'Password must be 6-16 characters long' });
+    const emailRegex = /(?: [a - z0 - 9!#$ %& '*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&' * +/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
+    if (!emailRegex.test(email))
+        return res.send({ message: 'Invalid email' });
     try {
         // Check if email is already registered
         const userByEmail = await User.findOne({ email: email });
@@ -125,6 +134,17 @@ router.post('/verify-code', async (req, res) => {
     const { username, email, password, code } = req.body;
     if (!username || !email || !password || !code)
         return res.send({ message: 'All fields required' });
+    if (username.length < 3 || username.length > 20)
+        return res.send({ message: 'Username must be 3-20 characters long' });
+    if (email.length < 5 || email.length > 50)
+        return res.send({ message: 'Email must be 5-50 characters long' });
+    if (password.length < 6 || password.length > 16)
+        return res.send({ message: 'Password must be 6-16 characters long' });
+    if (code.length !== 6)
+        return res.send({ message: 'Invalid verification code' });
+    const emailRegex = /(?: [a - z0 - 9!#$ %& '*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&' * +/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
+    if (!emailRegex.test(email))
+        return res.send({ message: 'Invalid email' });
     try {
         // Check if code is valid
         const document = await VerificationCode.findOne({ email: email });
@@ -138,9 +158,7 @@ router.post('/verify-code', async (req, res) => {
             username,
             email,
             password: hashedPassword,
-            info: {
-                profilePicture: '',
-            },
+            info: {},
             postsIDs: []
         });
         await user.save();
@@ -238,6 +256,8 @@ router.post('/changePassword', async (req, res) => {
     const { id, newPassword } = req.body;
     if (!id || !newPassword)
         return res.send({ message: 'All fields required' });
+    if (newPassword.length < 6 || newPassword.length > 16)
+        return res.send({ message: 'Password must be 6-16 characters long' });
     try {
         const user = await User.findById(id);
         if (!user)

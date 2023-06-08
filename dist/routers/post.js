@@ -14,8 +14,8 @@ router.use(verifyAccessToken);
 router.post('/create', async (req, res) => {
     const authorId = req.userId;
     const { content } = req.body;
-    if (content.length < 20 || content.length > 500) {
-        return res.send({ message: 'Post must be between 20 and 500 characters' });
+    if (content.length < 10 || content.length > 500) {
+        return res.send({ message: 'Post must be between 10 and 500 characters' });
     }
     try {
         // finds user by id
@@ -69,8 +69,8 @@ router.post('/comments/create/:id', async (req, res) => {
     const authorId = req.userId;
     const postId = req.params.id;
     const { content } = req.body;
-    if (content.length < 20 || content.length > 300) {
-        return res.send({ message: 'Comment must be between 20 and 300 characters' });
+    if (content.length < 10 || content.length > 300) {
+        return res.send({ message: 'Comment must be between 10 and 300 characters' });
     }
     if (!postId) {
         return res.send({ message: 'Post not found' });
