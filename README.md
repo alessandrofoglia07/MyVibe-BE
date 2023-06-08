@@ -19,6 +19,8 @@ The backend is built with NodeJS (Typescript) using:
 -   [nodemailer](https://nodemailer.com/about/)
 -   [bcrypt](https://www.npmjs.com/package/bcrypt)
 -   [jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken)
+-   [multer](https://www.npmjs.com/package/multer)
+-   [uuid](https://www.npmjs.com/package/uuid)
 
 ## Node Server Scripts
 
