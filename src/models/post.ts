@@ -35,7 +35,7 @@ const PostSchema = new Schema<IPostDocument>({
         maxlength: 500
     },
     likes: [{
-        type: [String],
+        type: String,
         ref: "User",
         default: []
     }],

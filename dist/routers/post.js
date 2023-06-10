@@ -141,14 +141,18 @@ router.get('/comments/:postId', async (req, res) => {
     try {
         if (!postId)
             return res.send({ message: 'Post not found' });
-        const comments = await Comment.find({ postId }).sort({ createdAt: -1 }).skip(skip).limit(limit);
-        const commentsWithLikes = comments.map(comment => {
-            return {
-                ...comment.toObject(),
-                liked: comment.likes.includes(req.userId)
-            };
-        });
-        res.send({ comments: commentsWithLikes });
+        const comments = await Comment.aggregate([
+            { $match: { postId: postId } },
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit },
+            {
+                $addFields: {
+                    liked: { $in: [req.userId, "$likes"] }
+                }
+            }
+        ]);
+        res.send({ comments });
     }
     catch (err) {
         console.log(err);
@@ -157,6 +161,9 @@ router.get('/comments/:postId', async (req, res) => {
 // Gets all posts made by people user follows
 router.get('/', async (req, res) => {
     const userId = req.userId;
+    const page = req.query.page ? parseInt(req.query.page.toString()) : 1;
+    const limit = 20;
+    const skip = (page - 1) * limit;
     try {
         // finds user
         const user = await User.findById(userId);
@@ -164,13 +171,18 @@ router.get('/', async (req, res) => {
         if (!user) {
             return res.send({ message: 'User not found' });
         }
-        // finds post made by people user follows
-        const posts = (await Post.find({ author: { $in: user.followingIDs } }).sort({ createdAt: -1 }).limit(50)).map(post => {
-            return {
-                ...post.toObject(),
-                liked: post.likes.includes(userId)
-            };
-        });
+        const posts = await Post.aggregate([
+            { $match: { author: { $in: user.followingIDs } } },
+            {
+                $addFields: {
+                    liked: { $in: [req.userId, "$likes"] },
+                    numLikes: { $size: "$likes" }
+                }
+            },
+            { $sort: { createdAt: -1 } },
+            { $limit: limit },
+            { $skip: skip }
+        ]);
         res.send({ posts });
     }
     catch (err) {
@@ -181,17 +193,24 @@ router.get('/', async (req, res) => {
 router.get('/hashtag/:hashtag', async (req, res) => {
     const hashtag = req.params.hashtag;
     const page = req.query.page ? parseInt(req.query.page.toString()) : 1;
-    const limit = 20;
+    const limit = 10;
     const skip = (page - 1) * limit;
     try {
         const regexPattern = new RegExp(`#${hashtag}(?!\\w)`, 'i');
-        const posts = (await Post.find({ content: { $regex: regexPattern } }).sort({ createdAt: -1 }).skip(skip).limit(limit)).map(post => {
-            return {
-                ...post.toObject(),
-                liked: post.likes.includes(req.userId)
-            };
-        });
-        res.send({ posts });
+        const posts = await Post.aggregate([
+            { $match: { content: { $regex: regexPattern } } },
+            {
+                $addFields: {
+                    liked: { $in: [req.userId, "$likes"] },
+                    numLikes: { $size: "$likes" }
+                }
+            },
+            { $sort: { numLikes: -1, createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit }
+        ]);
+        const postsNum = await Post.countDocuments({ content: { $regex: regexPattern } });
+        res.send({ posts, postsNum });
     }
     catch (err) {
         console.log(err);
@@ -201,16 +220,22 @@ router.get('/hashtag/:hashtag', async (req, res) => {
 router.get('/mention/:username', async (req, res) => {
     const username = req.params.username;
     const page = req.query.page ? parseInt(req.query.page.toString()) : 1;
-    const limit = 20;
+    const limit = 10;
     const skip = (page - 1) * limit;
     try {
         const regexPattern = new RegExp(`@${username}(?!\\w)`, 'i');
-        const posts = (await Post.find({ content: { $regex: regexPattern } }).sort({ createdAt: -1 }).skip(skip).limit(limit)).map(post => {
-            return {
-                ...post.toObject(),
-                liked: post.likes.includes(req.userId)
-            };
-        });
+        const posts = await Post.aggregate([
+            { $match: { content: { $regex: regexPattern } } },
+            {
+                $addFields: {
+                    liked: { $in: [req.userId, "$likes"] },
+                    numLikes: { $size: "$likes" }
+                }
+            },
+            { $sort: { numLikes: -1, createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit }
+        ]);
         res.send({ posts });
     }
     catch (err) {

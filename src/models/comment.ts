@@ -29,7 +29,7 @@ const CommentSchema = new Schema<ICommentDocument>({
         maxlength: 300
     },
     likes: [{
-        type: [String],
+        type: String,
         ref: "User",
         default: []
     }],
