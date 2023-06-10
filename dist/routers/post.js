@@ -177,4 +177,44 @@ router.get('/', async (req, res) => {
         console.log(err);
     }
 });
+// Gets all posts with a certain hashtag
+router.get('/hashtag/:hashtag', async (req, res) => {
+    const hashtag = req.params.hashtag;
+    const page = req.query.page ? parseInt(req.query.page.toString()) : 1;
+    const limit = 20;
+    const skip = (page - 1) * limit;
+    try {
+        const regexPattern = new RegExp(`#${hashtag}(?!\\w)`, 'i');
+        const posts = (await Post.find({ content: { $regex: regexPattern } }).sort({ createdAt: -1 }).skip(skip).limit(limit)).map(post => {
+            return {
+                ...post.toObject(),
+                liked: post.likes.includes(req.userId)
+            };
+        });
+        res.send({ posts });
+    }
+    catch (err) {
+        console.log(err);
+    }
+});
+// Gets all posts where user is mentioned
+router.get('/mention/:username', async (req, res) => {
+    const username = req.params.username;
+    const page = req.query.page ? parseInt(req.query.page.toString()) : 1;
+    const limit = 20;
+    const skip = (page - 1) * limit;
+    try {
+        const regexPattern = new RegExp(`@${username}(?!\\w)`, 'i');
+        const posts = (await Post.find({ content: { $regex: regexPattern } }).sort({ createdAt: -1 }).skip(skip).limit(limit)).map(post => {
+            return {
+                ...post.toObject(),
+                liked: post.likes.includes(req.userId)
+            };
+        });
+        res.send({ posts });
+    }
+    catch (err) {
+        console.log(err);
+    }
+});
 export default router;
