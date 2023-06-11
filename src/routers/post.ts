@@ -204,7 +204,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
         }
 
         const posts = await Post.aggregate([
-            { $match: { author: { $in: user.followingIDs } } },
+            { $match: { author: { $in: user.followingIDs?.map(id => id.toString()) } } },
             {
                 $addFields: {
                     liked: { $in: [req.userId, "$likes"] },

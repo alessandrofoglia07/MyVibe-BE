@@ -172,7 +172,7 @@ router.get('/', async (req, res) => {
             return res.send({ message: 'User not found' });
         }
         const posts = await Post.aggregate([
-            { $match: { author: { $in: user.followingIDs } } },
+            { $match: { author: { $in: user.followingIDs?.map(id => id.toString()) } } },
             {
                 $addFields: {
                     liked: { $in: [req.userId, "$likes"] },

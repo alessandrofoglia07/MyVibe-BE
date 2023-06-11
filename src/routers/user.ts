@@ -59,7 +59,7 @@ router.get('/pfp/:username', async (req: AuthRequest, res: Response) => {
         }
 
         const __filename = path.resolve();
-        const imagePath = path.join(__filename, 'images', user.info.profilePicture);
+        const imagePath = path.join(__filename, 'public', 'images', user.info.profilePicture);
 
         res.sendFile(imagePath);
     } catch (err) {

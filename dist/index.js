@@ -22,7 +22,7 @@ app.use('/api/users', userRouter);
 // Multer storage for uploaded images
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'images/');
+        cb(null, '/public/images/');
     },
     filename: (req, file, cb) => {
         const uniqueFilename = `${uuidv4()}-${file.originalname}`;

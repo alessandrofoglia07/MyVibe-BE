@@ -41,7 +41,7 @@ router.get('/pfp/:username', async (req, res) => {
             return res.send({ message: 'No profile picture' });
         }
         const __filename = path.resolve();
-        const imagePath = path.join(__filename, 'images', user.info.profilePicture);
+        const imagePath = path.join(__filename, 'public', 'images', user.info.profilePicture);
         res.sendFile(imagePath);
     }
     catch (err) {
