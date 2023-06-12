@@ -271,4 +271,38 @@ router.post('/unfollow/:id', async (req: AuthRequest, res: Response) => {
     }
 });
 
+// Searches for users
+router.get('/search', async (req: AuthRequest, res: Response) => {
+    const { search = '', limit = '0', page = '1' } = req.query;
+
+    const regex = new RegExp(search.toString(), 'i');
+
+    try {
+
+        const users = await User.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { username: regex },
+                        { 'info.firstName': regex },
+                        { 'info.lastName': regex }
+                    ]
+                }
+            },
+            {
+                $addFields: {
+                    followersCount: { $size: "$followersIDs" }
+                }
+            },
+            { $sort: { followersCount: -1 } },
+            { $limit: Number(limit) },
+            { $skip: (Number(page) - 1) * Number(limit) }
+        ]);
+
+        res.status(200).json(users);
+    } catch (err) {
+        console.log(err);
+    }
+});
+
 export default router;
