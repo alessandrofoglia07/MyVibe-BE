@@ -10,6 +10,11 @@ const router = Router();
 router.use(cors());
 router.use(express.json());
 router.use(verifyAccessToken);
+const limitNewLines = (text) => {
+    const maxConsecutiveNewLines = 3;
+    const regex = new RegExp(`(\\n\\s*){${maxConsecutiveNewLines + 1},}`, 'g');
+    return text.replace(regex, '\n'.repeat(maxConsecutiveNewLines));
+};
 // Creates a new post
 router.post('/create', async (req, res) => {
     const authorId = req.userId;
@@ -18,6 +23,7 @@ router.post('/create', async (req, res) => {
         return res.send({ message: 'Post must be between 10 and 500 characters' });
     }
     try {
+        const newContent = limitNewLines(content);
         // finds user by id
         const user = await User.findById(authorId);
         if (!user)
@@ -26,7 +32,7 @@ router.post('/create', async (req, res) => {
         const post = new Post({
             author: authorId,
             authorUsername: user.username,
-            content
+            content: newContent,
         });
         await post.save();
         // adds post id to user's postsIDs array and saves it to the database
@@ -76,6 +82,7 @@ router.post('/comments/create/:id', async (req, res) => {
         return res.send({ message: 'Post not found' });
     }
     try {
+        const newContent = limitNewLines(content);
         // finds post by id
         const post = await Post.findById(postId);
         // finds user by id
@@ -94,7 +101,7 @@ router.post('/comments/create/:id', async (req, res) => {
         const comment = new Comment({
             author: authorId,
             authorUsername: user.username,
-            content,
+            content: newContent,
             postId
         });
         await comment.save();
