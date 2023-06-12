@@ -70,11 +70,11 @@ export interface AuthRequest extends Request {
 export const verifyAccessToken = (req: AuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    if (!token) return res.status(401).send({ message: 'Access token not found' });
+    if (!token) return res.status(401).json({ message: 'Access token not found' });
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!, (err: any, user: any) => {
         if (err) {
             console.log(err);
-            return res.send({ message: 'Invalid access token' });
+            return res.status(401).json({ message: 'Invalid access token' });
         } else {
             req.userId = user.userId;
             next();
@@ -82,6 +82,7 @@ export const verifyAccessToken = (req: AuthRequest, res: Response, next: NextFun
     });
 };
 
+const emailRegex = /(?: [a - z0 - 9!#$ %& '*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&' * +/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
 
 // Send authentication code to user's email
 /* req format:
@@ -93,26 +94,26 @@ export const verifyAccessToken = (req: AuthRequest, res: Response, next: NextFun
 */
 router.post('/send-code', async (req: Request, res: Response) => {
     const { username, email, password } = req.body;
-    if (!username || !email || !password) return res.send({ message: 'All fields required' });
-    if (username.length < 3 || username.length > 20) return res.send({ message: 'Username must be 3-20 characters long' });
-    if (email.length < 5 || email.length > 50) return res.send({ message: 'Email must be 5-50 characters long' });
-    if (password.length < 6 || password.length > 16) return res.send({ message: 'Password must be 6-16 characters long' });
+    if (!username || !email || !password) return res.status(400).json({ message: 'All fields required' });
+    if (username.length < 3 || username.length > 20) return res.status(400).json({ message: 'Username must be 3-20 characters long' });
+    if (email.length < 5 || email.length > 50) return res.status(400).json({ message: 'Email must be 5-50 characters long' });
+    if (password.length < 6 || password.length > 16) return res.status(400).json({ message: 'Password must be 6-16 characters long' });
 
-    const emailRegex = /(?: [a - z0 - 9!#$ %& '*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&' * +/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
-    if (!emailRegex.test(email)) return res.send({ message: 'Invalid email' });
+    const emailRegex = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
+    if (!emailRegex.test(email)) return res.status(400).json({ message: 'Invalid email' });
 
     try {
         // Check if email is already registered
         const userByEmail = await User.findOne({ email: email });
-        if (userByEmail) return res.send({ message: 'Email already registered' });
+        if (userByEmail) return res.status(409).json({ message: 'Email already registered' });
 
         // Check if username is already taken
         const userByUsername = await User.findOne({ username: username });
-        if (userByUsername) return res.send({ message: 'Username already taken' });
+        if (userByUsername) return res.status(409).json({ message: 'Username already taken' });
 
         // Check if password is valid
         const passRegex = /^(?=.*\d).{6,16}$/;
-        if (!passRegex.test(password)) return res.send({ message: 'Password must be 6-16 characters long, and contain at least a letter and a number' });
+        if (!passRegex.test(password)) return res.status(400).json({ message: 'Password must be 6-16 characters long, and contain at least a letter and a number' });
 
         // Generate and send verification code
         const verificationCode = Math.floor(100000 + Math.random() * 900000); // Generate 6-digit code
@@ -126,10 +127,10 @@ router.post('/send-code', async (req: Request, res: Response) => {
         });
         await verificationCodeDocument.save();
 
-        res.status(200).send({ message: 'Verification code sent' });
+        res.status(200).json({ message: 'Verification code sent' });
     } catch (err) {
         console.log(err);
-        return res.status(500).send({ message: 'Internal server error' });
+        return res.sendStatus(500);
     }
 });
 
@@ -144,21 +145,21 @@ router.post('/send-code', async (req: Request, res: Response) => {
 */
 router.post('/verify-code', async (req: Request, res: Response) => {
     const { username, email, password, code } = req.body;
-    if (!username || !email || !password || !code) return res.send({ message: 'All fields required' });
-    if (username.length < 3 || username.length > 20) return res.send({ message: 'Username must be 3-20 characters long' });
-    if (email.length < 5 || email.length > 50) return res.send({ message: 'Email must be 5-50 characters long' });
-    if (password.length < 6 || password.length > 16) return res.send({ message: 'Password must be 6-16 characters long' });
-    if (code.length !== 6) return res.send({ message: 'Invalid verification code' });
+    if (!username || !email || !password || !code) return res.status(400).json({ message: 'All fields required' });
+    if (username.length < 3 || username.length > 20) return res.status(400).json({ message: 'Username must be 3-20 characters long' });
+    if (email.length < 5 || email.length > 50) return res.status(400).json({ message: 'Email must be 5-50 characters long' });
+    if (password.length < 6 || password.length > 16) return res.status(400).json({ message: 'Password must be 6-16 characters long' });
+    if (code.length !== 6) return res.status(400).json({ message: 'Invalid verification code' });
 
-    const emailRegex = /(?: [a - z0 - 9!#$ %& '*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&' * +/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
-    if (!emailRegex.test(email)) return res.send({ message: 'Invalid email' });
+    const emailRegex = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
+    if (!emailRegex.test(email)) return res.status(400).json({ message: 'Invalid email' });
 
     try {
 
         // Check if code is valid
         const document = await VerificationCode.findOne({ email: email });
-        if (!document) return res.send({ message: 'Invalid verification code' });
-        if (document.code.toString() !== code) return res.send({ message: 'Invalid verification code' });
+        if (!document) return res.status(400).json({ message: 'Invalid verification code' });
+        if (document.code.toString() !== code) return res.status(400).json({ message: 'Invalid verification code' });
 
         document.deleteOne();
 
@@ -171,11 +172,11 @@ router.post('/verify-code', async (req: Request, res: Response) => {
             postsIDs: []
         });
         await user.save();
-        res.status(200).send({ message: 'User created' });
+        res.status(201).json({ message: 'User created' });
 
     } catch (err) {
         console.log(err);
-        res.status(500).send({ message: 'Internal server error' });
+        return res.sendStatus(500);
     }
 });
 
@@ -188,22 +189,22 @@ router.post('/verify-code', async (req: Request, res: Response) => {
 */
 router.post('/login', async (req: Request, res: Response) => {
     const { email, password } = req.body;
-    if (!email || !password) return res.send({ message: 'Email and password required' });
+    if (!email || !password) return res.status(400).json({ message: 'Email and password required' });
 
     try {
         const user: IUserDocument | null = await User.findOne({ email: email });
-        if (!user) return res.send({ message: 'Invalid email or password' });
+        if (!user) return res.status(401).json({ message: 'Invalid email or password' });
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
-        if (!isPasswordValid) return res.send({ message: 'Invalid email or password' });
+        if (!isPasswordValid) return res.status(401).json({ message: 'Invalid email or password' });
 
         const accessToken = await generateAccessToken(user);
         const refreshToken = await generateRefreshToken(user);
 
-        res.status(200).send({ accessToken, refreshToken, userId: user._id, email: email, username: user.username, message: 'Login successful' });
+        res.status(200).json({ accessToken, refreshToken, userId: user._id, email: email, username: user.username, message: 'Login successful' });
     } catch (err) {
         console.log(err);
-        res.status(500).send({ message: 'Internal server error' });
+        return res.sendStatus(500);
     }
 });
 
@@ -216,40 +217,41 @@ router.post('/refresh-token', async (req: Request, res: Response) => {
         jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET as string, async (err: any, decoded: any) => {
             if (err) {
                 console.log(err);
-                return res.status(403).send({ message: 'Invalid refresh token' });
+                return res.status(403).json({ message: 'Invalid refresh token' });
             }
 
             const userId = decoded.userId;
             const user = await User.findById(userId);
 
-            if (!user) return res.status(403).send({ message: 'Invalid refresh token' });
+            if (!user) return res.status(403).json({ message: 'Invalid refresh token' });
 
             const accessToken = await generateAccessToken(user);
-            res.send({ accessToken, message: 'Token refreshed' });
+            res.json({ accessToken, message: 'Token refreshed' });
         });
     } catch (err) {
         console.log(err);
-        res.status(500).send({ message: 'Internal server error' });
+        return res.sendStatus(500);
     }
 });
 
 router.post('/forgotPassword', async (req: Request, res: Response) => {
     const { email } = req.body;
 
-    if (!email) return res.send({ message: 'Email not found' });
+    if (!email) return res.status(400).json({ message: 'Email not found' });
 
     try {
         const user = await User.findOne({ email: email });
 
-        if (!user) return res.send({ message: 'Email not found' });
+        if (!user) return res.status(404).json({ message: 'Email not found' });
 
         user.forgotPassword = true;
         await user.save();
 
         sendEmail(email, 'MyVibe - Reset Password', `Click this link to reset your password: http://localhost:3000/resetPassword/${user._id}`);
-        res.send({ message: 'Email sent' });
+        res.json({ message: 'Email sent' });
     } catch (err) {
         console.log(err);
+        return res.sendStatus(500);
     }
 });
 
@@ -259,37 +261,37 @@ router.get('/checkResetPassword/:userId', async (req: Request, res: Response) =>
     try {
         const user = await User.findById(userId);
 
-        if (!user) return res.send({ forgotPassword: false });
-        if (!user.forgotPassword) return res.send({ forgotPassword: false });
+        if (!user) return res.json({ forgotPassword: false });
+        if (!user.forgotPassword) return res.json({ forgotPassword: false });
 
         user.forgotPassword = false;
         await user.save();
 
-        res.send({ forgotPassword: true });
+        res.json({ forgotPassword: true });
     } catch (err) {
         console.log(err);
+        return res.sendStatus(500);
     }
 });
 
 router.post('/changePassword', async (req: Request, res: Response) => {
     const { id, newPassword } = req.body;
 
-    if (!id || !newPassword) return res.send({ message: 'All fields required' });
-    if (newPassword.length < 6 || newPassword.length > 16) return res.send({ message: 'Password must be 6-16 characters long' });
+    if (!id || !newPassword) return res.status(400).json({ message: 'All fields required' });
 
     try {
         const user = await User.findById(id);
 
-        if (!user) return res.send({ message: 'Invalid user' });
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
-        const hash = await bcrypt.hash(newPassword, 10);
-        user.password = hash;
-        user.forgotPassword = false;
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
         await user.save();
 
-        res.send({ message: 'Password changed' });
+        res.json({ message: 'Password changed successfully' });
     } catch (err) {
         console.log(err);
+        return res.sendStatus(500);
     }
 });
 

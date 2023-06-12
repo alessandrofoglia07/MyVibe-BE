@@ -20,14 +20,14 @@ router.post('/create', async (req, res) => {
     const authorId = req.userId;
     const { content } = req.body;
     if (content.length < 10 || content.length > 500) {
-        return res.send({ message: 'Post must be between 10 and 500 characters' });
+        return res.status(400).json({ message: 'Post must be between 10 and 500 characters' });
     }
     try {
         const newContent = limitNewLines(content);
         // finds user by id
         const user = await User.findById(authorId);
         if (!user)
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         // creates new post and saves it to the database
         const post = new Post({
             author: authorId,
@@ -38,13 +38,14 @@ router.post('/create', async (req, res) => {
         // adds post id to user's postsIDs array and saves it to the database
         user.postsIDs?.push(post._id);
         await user.save();
-        res.status(201).send({ post, message: 'Post created' });
+        res.status(201).json({ post, message: 'Post created' });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
-//Likes a post
+// Likes a post
 router.post('/like/:id', async (req, res) => {
     const userId = req.userId;
     const postId = req.params.id;
@@ -53,21 +54,22 @@ router.post('/like/:id', async (req, res) => {
         const post = await Post.findById(postId);
         // if post doesn't exist, return error
         if (!post) {
-            return res.send({ message: 'Post not found' });
+            return res.status(404).json({ message: 'Post not found' });
         }
         // if user has already liked the post, unlike it
         if (post.likes.includes(userId)) {
             post.likes = post.likes.filter(id => id === userId);
             await post.save();
-            return res.send({ post, message: 'Post unliked' });
+            return res.json({ post, message: 'Post unliked' });
         }
         // if user hasn't liked the post, like it
         post.likes.push(userId);
         await post.save();
-        res.send({ post, message: 'Post liked', });
+        res.json({ post, message: 'Post liked' });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 // Create a new comment
@@ -76,10 +78,10 @@ router.post('/comments/create/:id', async (req, res) => {
     const postId = req.params.id;
     const { content } = req.body;
     if (content.length < 10 || content.length > 300) {
-        return res.send({ message: 'Comment must be between 10 and 300 characters' });
+        return res.status(400).json({ message: 'Comment must be between 10 and 300 characters' });
     }
     if (!postId) {
-        return res.send({ message: 'Post not found' });
+        return res.status(400).json({ message: 'Post not found' });
     }
     try {
         const newContent = limitNewLines(content);
@@ -89,14 +91,12 @@ router.post('/comments/create/:id', async (req, res) => {
         const user = await User.findById(authorId);
         // if post doesn't exist, return error
         if (!post) {
-            return res.send({ message: 'Post not found' });
+            return res.status(404).json({ message: 'Post not found' });
         }
-        ;
         // if user doesn't exist, return error
         if (!user) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
-        ;
         // creates new comment and saves it to the database
         const comment = new Comment({
             author: authorId,
@@ -108,10 +108,11 @@ router.post('/comments/create/:id', async (req, res) => {
         // adds comment to post
         post.comments.push(comment._id);
         await post.save();
-        res.status(201).send({ comment, message: 'Comment created' });
+        res.status(201).json({ comment, message: 'Comment created' });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 // Likes a comment
@@ -123,21 +124,22 @@ router.post('/comments/like/:id', async (req, res) => {
         const comment = await Comment.findById(commentId);
         // if comment doesn't exist, return error
         if (!comment) {
-            return res.status(404).send({ message: 'Comment not found' });
+            return res.status(404).json({ message: 'Comment not found' });
         }
         // if user has already liked the comment, unlike it
         if (comment.likes.includes(userId)) {
             comment.likes = comment.likes.filter(id => id === userId);
             await comment.save();
-            return res.send({ comment, message: 'Comment unliked' });
+            return res.json({ comment, message: 'Comment unliked' });
         }
         // if user hasn't liked the comment, like it
         comment.likes.push(userId);
         await comment.save();
-        res.send({ comment, message: 'Comment liked' });
+        res.json({ comment, message: 'Comment liked' });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 router.get('/comments/:postId', async (req, res) => {
@@ -147,7 +149,7 @@ router.get('/comments/:postId', async (req, res) => {
     const skip = (page - 1) * limit;
     try {
         if (!postId)
-            return res.send({ message: 'Post not found' });
+            return res.status(400).json({ message: 'Post not found' });
         const comments = await Comment.aggregate([
             { $match: { postId: postId } },
             { $sort: { createdAt: -1 } },
@@ -159,24 +161,25 @@ router.get('/comments/:postId', async (req, res) => {
                 }
             }
         ]);
-        res.send({ comments });
+        res.json({ comments });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 // Gets all posts made by people user follows
 router.get('/', async (req, res) => {
     const userId = req.userId;
     const page = req.query.page ? parseInt(req.query.page.toString()) : 1;
-    const limit = 20;
+    const limit = req.query.limit ? parseInt(req.query.limit.toString()) : 10;
     const skip = (page - 1) * limit;
     try {
         // finds user
         const user = await User.findById(userId);
         // if user doesn't exist, return error
         if (!user) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
         const posts = await Post.aggregate([
             { $match: { author: { $in: user.followingIDs?.map(id => id.toString()) } } },
@@ -187,13 +190,15 @@ router.get('/', async (req, res) => {
                 }
             },
             { $sort: { createdAt: -1 } },
+            { $skip: skip },
             { $limit: limit },
-            { $skip: skip }
         ]);
-        res.send({ posts });
+        const numPosts = await Post.countDocuments({ author: { $in: user.followingIDs?.map(id => id.toString()) } });
+        res.json({ posts, numPosts });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 // Gets all posts with a certain hashtag
@@ -217,10 +222,11 @@ router.get('/hashtag/:hashtag', async (req, res) => {
             { $limit: limit }
         ]);
         const postsNum = await Post.countDocuments({ content: { $regex: regexPattern } });
-        res.send({ posts, postsNum });
+        res.json({ posts, postsNum });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 // Gets all posts where user is mentioned
@@ -243,10 +249,11 @@ router.get('/mention/:username', async (req, res) => {
             { $skip: skip },
             { $limit: limit }
         ]);
-        res.send({ posts });
+        res.json({ posts });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 export default router;

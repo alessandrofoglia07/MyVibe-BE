@@ -21,7 +21,8 @@ type ObjectIdConstructor = {
     new(str: string): mongoose.Schema.Types.ObjectId;
 };
 
-const toObjectId = (str: string): mongoose.Schema.Types.ObjectId => new (mongoose.Types.ObjectId as unknown as ObjectIdConstructor)(str);
+const toObjectId = (str: string): mongoose.Schema.Types.ObjectId =>
+    new (mongoose.Types.ObjectId as unknown as ObjectIdConstructor)(str);
 
 // Gets all people user follows
 router.get('/following', async (req: AuthRequest, res: Response) => {
@@ -31,19 +32,20 @@ router.get('/following', async (req: AuthRequest, res: Response) => {
         const user = await User.findById(userId);
 
         if (!user) {
-            return res.status(400).send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
 
         const following: any[] = await User.find({ _id: { $in: user.followingIDs } });
         const usernames = following.map(user => user.username);
 
-        res.send({ usernames });
+        res.json({ usernames });
     } catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 
-// Gets a user's pfp 
+// Gets a user's pfp
 router.get('/pfp/:username', async (req: AuthRequest, res: Response) => {
     const { username } = req.params;
 
@@ -51,11 +53,11 @@ router.get('/pfp/:username', async (req: AuthRequest, res: Response) => {
         const user = await User.findOne({ username });
 
         if (!user) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
 
         if (user.info.profilePicture === '') {
-            return res.send({ message: 'No profile picture' });
+            return res.json({ message: 'No profile picture' });
         }
 
         const __filename = path.resolve();
@@ -64,6 +66,7 @@ router.get('/pfp/:username', async (req: AuthRequest, res: Response) => {
         res.sendFile(imagePath);
     } catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 
@@ -76,7 +79,7 @@ router.get('/profile/:username', async (req: AuthRequest, res: Response) => {
         const user = await User.findOne({ username });
 
         if (!user) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
 
         // destructure user object
@@ -89,9 +92,10 @@ router.get('/profile/:username', async (req: AuthRequest, res: Response) => {
         // check if profile is the user's profile
         const isProfile = userId === user._id.toString();
 
-        res.send({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt }, isFollowing, isProfile });
+        res.json({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt }, isFollowing, isProfile });
     } catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 
@@ -116,12 +120,12 @@ router.patch('/profile/:username', async (req: AuthRequest, res: Response) => {
         const user = await User.findOne({ username });
 
         if (!user) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
 
         // check if profile is the user's profile
         if (userId !== user._id.toString()) {
-            return res.send({ message: 'Unauthorized' });
+            return res.status(401).json({ message: 'Unauthorized' });
         }
 
         // update user info
@@ -131,9 +135,10 @@ router.patch('/profile/:username', async (req: AuthRequest, res: Response) => {
         user.username = changed.username;
         await user.save();
 
-        res.send('User updated');
+        res.json({ message: 'User updated' });
     } catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 
@@ -142,11 +147,11 @@ router.patch('/profile/:username/uploadPfp', (req: AuthRequest, res: Response) =
     upload(req, res, async (err: any) => {
         if (err) {
             console.log(err);
-            return res.send({ message: 'Error uploading file' });
+            return res.status(500).json({ message: 'Error uploading file' });
         }
 
         if (!req.file) {
-            return res.send({ message: 'No file uploaded' });
+            return res.status(400).json({ message: 'No file uploaded' });
         }
 
         const { filename } = req.file;
@@ -157,21 +162,22 @@ router.patch('/profile/:username/uploadPfp', (req: AuthRequest, res: Response) =
             const user = await User.findOne({ username });
 
             if (!user) {
-                return res.send({ message: 'User not found' });
+                return res.status(404).json({ message: 'User not found' });
             }
 
             // check if profile is the user's profile
             if (userId !== user._id.toString()) {
-                return res.send({ message: 'Unauthorized' });
+                return res.status(401).json({ message: 'Unauthorized' });
             }
 
             // update user profile picture
             user.info.profilePicture = filename;
             await user.save();
 
-            res.send({ message: 'Profile picture updated', filename });
+            res.json({ message: 'Profile picture updated', filename });
         } catch (err) {
             console.log(err);
+            return res.status(500).json({ message: 'Internal server error' });
         }
     });
 });
@@ -185,7 +191,7 @@ router.get('/posts/:username', async (req: AuthRequest, res: Response) => {
         const user = await User.findOne({ username });
 
         if (!user) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
 
         const posts = (await Post.find({ _id: { $in: user.postsIDs } }).sort({ createdAt: -1 }).limit(10)).map(post => {
@@ -195,9 +201,10 @@ router.get('/posts/:username', async (req: AuthRequest, res: Response) => {
             };
         });
 
-        res.send({ message: 'User found', posts });
+        res.json({ message: 'User found', posts });
     } catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 
@@ -214,12 +221,12 @@ router.post('/follow/:id', async (req: AuthRequest, res: Response) => {
         const objToFollowId = toObjectId(toFollowId);
 
         if (!user || !toFollow) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
 
         // check if user is already following the user
         if (user.followingIDs?.includes(objToFollowId)) {
-            return res.send({ message: 'User already followed' });
+            return res.json({ message: 'User already followed' });
         }
 
         // add user to following list
@@ -230,9 +237,10 @@ router.post('/follow/:id', async (req: AuthRequest, res: Response) => {
         toFollow.followersIDs?.push(objUserId);
         await toFollow.save();
 
-        res.send({ message: 'User followed', followerID: objUserId });
+        res.json({ message: 'User followed', followerID: objUserId });
     } catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 
@@ -249,12 +257,12 @@ router.post('/unfollow/:id', async (req: AuthRequest, res: Response) => {
         const objToUnfollowId = toObjectId(toUnfollowId);
 
         if (!user || !toUnfollow) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
 
         // check if user is following the user
         if (!user.followingIDs?.includes(objToUnfollowId)) {
-            return res.send({ message: 'User not followed' });
+            return res.json({ message: 'User not followed' });
         }
 
         // remove user from following list
@@ -265,9 +273,10 @@ router.post('/unfollow/:id', async (req: AuthRequest, res: Response) => {
         toUnfollow.followersIDs = toUnfollow.followersIDs?.filter(id => id.toString() !== objUserId.toString());
         await toUnfollow.save();
 
-        res.send({ message: 'User unfollowed', followerID: objUserId });
+        res.json({ message: 'User unfollowed', followerID: objUserId });
     } catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 
@@ -310,6 +319,7 @@ router.get('/search', async (req: AuthRequest, res: Response) => {
         res.status(200).json({ users, usersCount });
     } catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 

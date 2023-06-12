@@ -19,26 +19,27 @@ router.get('/following', async (req, res) => {
     try {
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(400).send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
         const following = await User.find({ _id: { $in: user.followingIDs } });
         const usernames = following.map(user => user.username);
-        res.send({ usernames });
+        res.json({ usernames });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
-// Gets a user's pfp 
+// Gets a user's pfp
 router.get('/pfp/:username', async (req, res) => {
     const { username } = req.params;
     try {
         const user = await User.findOne({ username });
         if (!user) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
         if (user.info.profilePicture === '') {
-            return res.send({ message: 'No profile picture' });
+            return res.json({ message: 'No profile picture' });
         }
         const __filename = path.resolve();
         const imagePath = path.join(__filename, 'public', 'images', user.info.profilePicture);
@@ -46,6 +47,7 @@ router.get('/pfp/:username', async (req, res) => {
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 // Gets a user's profile
@@ -55,7 +57,7 @@ router.get('/profile/:username', async (req, res) => {
     try {
         const user = await User.findOne({ username });
         if (!user) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
         // destructure user object
         const { _id, email, info, postsIDs, followingIDs, followersIDs, createdAt } = user;
@@ -64,10 +66,11 @@ router.get('/profile/:username', async (req, res) => {
         const isFollowing = user.followersIDs?.includes(objectId);
         // check if profile is the user's profile
         const isProfile = userId === user._id.toString();
-        res.send({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt }, isFollowing, isProfile });
+        res.json({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt }, isFollowing, isProfile });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 // Modifies a user's profile
@@ -78,11 +81,11 @@ router.patch('/profile/:username', async (req, res) => {
     try {
         const user = await User.findOne({ username });
         if (!user) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
         // check if profile is the user's profile
         if (userId !== user._id.toString()) {
-            return res.send({ message: 'Unauthorized' });
+            return res.status(401).json({ message: 'Unauthorized' });
         }
         // update user info
         user.info.firstName = changed.info.firstName;
@@ -90,10 +93,11 @@ router.patch('/profile/:username', async (req, res) => {
         user.info.bio = changed.info.bio;
         user.username = changed.username;
         await user.save();
-        res.send('User updated');
+        res.json({ message: 'User updated' });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 // Modifies a user's profile picture
@@ -101,10 +105,10 @@ router.patch('/profile/:username/uploadPfp', (req, res) => {
     upload(req, res, async (err) => {
         if (err) {
             console.log(err);
-            return res.send({ message: 'Error uploading file' });
+            return res.status(500).json({ message: 'Error uploading file' });
         }
         if (!req.file) {
-            return res.send({ message: 'No file uploaded' });
+            return res.status(400).json({ message: 'No file uploaded' });
         }
         const { filename } = req.file;
         const { username } = req.params;
@@ -112,19 +116,20 @@ router.patch('/profile/:username/uploadPfp', (req, res) => {
         try {
             const user = await User.findOne({ username });
             if (!user) {
-                return res.send({ message: 'User not found' });
+                return res.status(404).json({ message: 'User not found' });
             }
             // check if profile is the user's profile
             if (userId !== user._id.toString()) {
-                return res.send({ message: 'Unauthorized' });
+                return res.status(401).json({ message: 'Unauthorized' });
             }
             // update user profile picture
             user.info.profilePicture = filename;
             await user.save();
-            res.send({ message: 'Profile picture updated', filename });
+            res.json({ message: 'Profile picture updated', filename });
         }
         catch (err) {
             console.log(err);
+            return res.status(500).json({ message: 'Internal server error' });
         }
     });
 });
@@ -135,7 +140,7 @@ router.get('/posts/:username', async (req, res) => {
     try {
         const user = await User.findOne({ username });
         if (!user) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
         const posts = (await Post.find({ _id: { $in: user.postsIDs } }).sort({ createdAt: -1 }).limit(10)).map(post => {
             return {
@@ -143,10 +148,11 @@ router.get('/posts/:username', async (req, res) => {
                 liked: post.likes.includes(userId)
             };
         });
-        res.send({ message: 'User found', posts });
+        res.json({ message: 'User found', posts });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 // Follows a user
@@ -159,11 +165,11 @@ router.post('/follow/:id', async (req, res) => {
         const objUserId = toObjectId(userId);
         const objToFollowId = toObjectId(toFollowId);
         if (!user || !toFollow) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
         // check if user is already following the user
         if (user.followingIDs?.includes(objToFollowId)) {
-            return res.send({ message: 'User already followed' });
+            return res.json({ message: 'User already followed' });
         }
         // add user to following list
         user.followingIDs?.push(objToFollowId);
@@ -171,10 +177,11 @@ router.post('/follow/:id', async (req, res) => {
         // add user to followers list
         toFollow.followersIDs?.push(objUserId);
         await toFollow.save();
-        res.send({ message: 'User followed', followerID: objUserId });
+        res.json({ message: 'User followed', followerID: objUserId });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 // Unfollows a user
@@ -187,11 +194,11 @@ router.post('/unfollow/:id', async (req, res) => {
         const objUserId = toObjectId(userId);
         const objToUnfollowId = toObjectId(toUnfollowId);
         if (!user || !toUnfollow) {
-            return res.send({ message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
         // check if user is following the user
         if (!user.followingIDs?.includes(objToUnfollowId)) {
-            return res.send({ message: 'User not followed' });
+            return res.json({ message: 'User not followed' });
         }
         // remove user from following list
         user.followingIDs = user.followingIDs?.filter(id => id.toString() !== objToUnfollowId.toString());
@@ -199,10 +206,11 @@ router.post('/unfollow/:id', async (req, res) => {
         // remove user from followers list
         toUnfollow.followersIDs = toUnfollow.followersIDs?.filter(id => id.toString() !== objUserId.toString());
         await toUnfollow.save();
-        res.send({ message: 'User unfollowed', followerID: objUserId });
+        res.json({ message: 'User unfollowed', followerID: objUserId });
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 // Searches for users
@@ -240,6 +248,7 @@ router.get('/search', async (req, res) => {
     }
     catch (err) {
         console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 export default router;
