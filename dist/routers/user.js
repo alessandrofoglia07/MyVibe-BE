@@ -229,7 +229,14 @@ router.get('/search', async (req, res) => {
             { $limit: Number(limit) },
             { $skip: (Number(page) - 1) * Number(limit) }
         ]);
-        res.status(200).json(users);
+        const usersCount = await User.countDocuments({
+            $or: [
+                { username: regex },
+                { 'info.firstName': regex },
+                { 'info.lastName': regex }
+            ]
+        });
+        res.status(200).json({ users, usersCount });
     }
     catch (err) {
         console.log(err);
