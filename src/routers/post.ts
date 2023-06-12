@@ -14,6 +14,12 @@ router.use(cors());
 router.use(express.json());
 router.use(verifyAccessToken);
 
+const limitNewLines = (text: string): string => {
+    const maxConsecutiveNewLines = 3;
+    const regex = new RegExp(`(\\n\\s*){${maxConsecutiveNewLines + 1},}`, 'g');
+    return text.replace(regex, '\n'.repeat(maxConsecutiveNewLines));
+};
+
 // Creates a new post
 router.post('/create', async (req: AuthRequest, res: Response) => {
     const authorId = req.userId;
@@ -25,6 +31,8 @@ router.post('/create', async (req: AuthRequest, res: Response) => {
 
     try {
 
+        const newContent = limitNewLines(content);
+
         // finds user by id
         const user = await User.findById(authorId);
 
@@ -34,7 +42,7 @@ router.post('/create', async (req: AuthRequest, res: Response) => {
         const post = new Post({
             author: authorId,
             authorUsername: user.username,
-            content
+            content: newContent,
         });
         await post.save();
 
@@ -94,6 +102,9 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
     }
 
     try {
+
+        const newContent = limitNewLines(content);
+
         // finds post by id
         const post = await Post.findById(postId);
 
