@@ -5,7 +5,7 @@ import VerificationCode from '../models/verificationCode.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
-import nodemailer from 'nodemailer';
+import { sendEmail } from '../index.js';
 
 dotenv.config();
 
@@ -13,36 +13,6 @@ const router = Router();
 
 router.use(cors());
 router.use(express.json());
-
-// Nodemailer setup
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.DEFAULT_EMAIL,
-        pass: process.env.DEFAULT_PASSWORD
-    }
-});
-
-/**Sends an email with nodemailer
- * @param recipient - the email address of the recipient
- * @param subject - the subject of the email
- * @param text - the text of the email
- * @returns void
- */
-const sendEmail = (recipient: string, subject: string, text: string) => {
-    const mailOptions = {
-        from: process.env.DEFAULT_EMAIL,
-        to: recipient,
-        subject: subject,
-        text: text
-    };
-
-    transporter.sendMail(mailOptions, (err: any, info: any) => {
-        if (err) {
-            console.log(err);
-        }
-    });
-};
 
 /** Generate access token
  * - Use case: after a user has successfully authenticated with valid credentials
@@ -82,7 +52,21 @@ export const verifyAccessToken = (req: AuthRequest, res: Response, next: NextFun
     });
 };
 
-const emailRegex = /(?: [a - z0 - 9!#$ %& '*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&' * +/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
+/** Check if username, email and password are valid */
+const checkCredentials = (req: Request, res: Response, next: NextFunction) => {
+
+    const emailRegex = /(?: [a - z0 - 9!#$ %& '*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&' * +/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
+
+    const { username, email, password } = req.body;
+    if (!username || !email || !password) return res.status(400).json({ message: 'All fields required' });
+    if (username.length < 3 || username.length > 20) return res.status(400).json({ message: 'Username must be 3-20 characters long' });
+    if (email.length < 5 || email.length > 50) return res.status(400).json({ message: 'Email must be 5-50 characters long' });
+    if (password.length < 6 || password.length > 16) return res.status(400).json({ message: 'Password must be 6-16 characters long' });
+
+    if (!emailRegex.test(email)) return res.status(400).json({ message: 'Invalid email' });
+
+    next();
+};
 
 // Send authentication code to user's email
 /* req format:
@@ -92,15 +76,8 @@ const emailRegex = /(?: [a - z0 - 9!#$ %& '*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&' * +
     password: string
 }
 */
-router.post('/send-code', async (req: Request, res: Response) => {
+router.post('/send-code', checkCredentials, async (req: Request, res: Response) => {
     const { username, email, password } = req.body;
-    if (!username || !email || !password) return res.status(400).json({ message: 'All fields required' });
-    if (username.length < 3 || username.length > 20) return res.status(400).json({ message: 'Username must be 3-20 characters long' });
-    if (email.length < 5 || email.length > 50) return res.status(400).json({ message: 'Email must be 5-50 characters long' });
-    if (password.length < 6 || password.length > 16) return res.status(400).json({ message: 'Password must be 6-16 characters long' });
-
-    const emailRegex = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
-    if (!emailRegex.test(email)) return res.status(400).json({ message: 'Invalid email' });
 
     try {
         // Check if email is already registered
@@ -143,16 +120,8 @@ router.post('/send-code', async (req: Request, res: Response) => {
     code: string
 }
 */
-router.post('/verify-code', async (req: Request, res: Response) => {
+router.post('/verify-code', checkCredentials, async (req: Request, res: Response) => {
     const { username, email, password, code } = req.body;
-    if (!username || !email || !password || !code) return res.status(400).json({ message: 'All fields required' });
-    if (username.length < 3 || username.length > 20) return res.status(400).json({ message: 'Username must be 3-20 characters long' });
-    if (email.length < 5 || email.length > 50) return res.status(400).json({ message: 'Email must be 5-50 characters long' });
-    if (password.length < 6 || password.length > 16) return res.status(400).json({ message: 'Password must be 6-16 characters long' });
-    if (code.length !== 6) return res.status(400).json({ message: 'Invalid verification code' });
-
-    const emailRegex = /(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
-    if (!emailRegex.test(email)) return res.status(400).json({ message: 'Invalid email' });
 
     try {
 
@@ -292,6 +261,25 @@ router.post('/changePassword', async (req: Request, res: Response) => {
     } catch (err) {
         console.log(err);
         return res.sendStatus(500);
+    }
+});
+
+router.post('/completeVerification/:verificationCode', async (req: Request, res: Response) => {
+    const { verificationCode } = req.params;
+
+    try {
+        const user = await User.findOne({ verificationCode });
+
+        if (!user) return res.status(404).json({ message: 'User not found.' });
+
+        user.verified = true;
+        user.verificationCode = undefined;
+        await user.save();
+
+        res.status(200).json({ message: 'Verification completed.' });
+    } catch (err) {
+        console.log(err);
+        return res.sendStatus(500).json({ message: 'Internal server error.' });
     }
 });
 

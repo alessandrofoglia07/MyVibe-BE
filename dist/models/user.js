@@ -61,6 +61,14 @@ const UserSchema = new Schema({
     forgotPassword: {
         type: Boolean,
         default: false
+    },
+    verified: {
+        type: Boolean,
+        default: false,
+        required: true
+    },
+    verificationCode: {
+        type: String,
     }
 }, {
     timestamps: true

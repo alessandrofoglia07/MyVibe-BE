@@ -5,9 +5,11 @@ import mongoose from 'mongoose';
 import authRouter from './routers/auth.js';
 import postRouter from './routers/post.js';
 import userRouter from './routers/user.js';
+import adminRouter from './routers/admin.js';
 import path from 'path';
 import multer from 'multer';
 import { v4 as uuidv4 } from 'uuid';
+import nodemailer from 'nodemailer';
 
 dotenv.config();
 
@@ -22,9 +24,10 @@ app.use(cors(
 app.use(express.json());
 
 // Routes
-app.use('/api/auth', authRouter);
-app.use('/api/posts', postRouter);
-app.use('/api/users', userRouter);
+app.use('/api/v1/auth', authRouter);
+app.use('/api/v1/posts', postRouter);
+app.use('/api/v1/users', userRouter);
+app.use('/api/v1/admin', adminRouter);
 
 // Multer storage for uploaded images
 const storage = multer.diskStorage({
@@ -36,6 +39,36 @@ const storage = multer.diskStorage({
         cb(null, uniqueFilename);
     }
 });
+
+// Nodemailer setup
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.DEFAULT_EMAIL,
+        pass: process.env.DEFAULT_PASSWORD
+    }
+});
+
+/**Sends an email with nodemailer
+ * @param recipient - the email address of the recipient
+ * @param subject - the subject of the email
+ * @param text - the text of the email
+ * @returns void
+ */
+export const sendEmail = (recipient: string, subject: string, text: string) => {
+    const mailOptions = {
+        from: process.env.DEFAULT_EMAIL,
+        to: recipient,
+        subject: subject,
+        text: text
+    };
+
+    transporter.sendMail(mailOptions, (err: any, info: any) => {
+        if (err) {
+            console.log(err);
+        }
+    });
+};
 
 // File upload middleware
 export const upload = multer({

@@ -14,6 +14,8 @@ export interface IUser {
     followingIDs?: Schema.Types.ObjectId[];
     followersIDs?: Schema.Types.ObjectId[];
     forgotPassword?: boolean;
+    verified: boolean;
+    verificationCode?: string;
 }
 
 export interface IUserDocument extends IUser, Document {
@@ -84,6 +86,14 @@ const UserSchema = new Schema<IUserDocument>({
     forgotPassword: {
         type: Boolean,
         default: false
+    },
+    verified: {
+        type: Boolean,
+        default: false,
+        required: true
+    },
+    verificationCode: {
+        type: String,
     }
 }, {
     timestamps: true
