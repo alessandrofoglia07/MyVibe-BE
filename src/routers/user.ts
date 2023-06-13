@@ -1,29 +1,14 @@
-import express, { Response, Router } from 'express';
-import cors from 'cors';
+import { Response, Router } from 'express';
 import User from '../models/user.js';
-import Post from '../models/post.js';
-import { AuthRequest, verifyAccessToken } from './auth.js';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import verifyAccessToken from '../middlewares/verifyAccessToken.js';
+import { AuthRequest, toObjectId, IUserChanged } from '../types.js';
 import { upload } from '../index.js';
 import path from 'path';
-import { getPosts } from './post.js';
-
-dotenv.config();
+import getPosts from '../utils/getPostsPipeline.js';
 
 const router = Router();
 
-router.use(cors());
-router.use(express.json());
 router.use(verifyAccessToken);
-
-type ObjectIdConstructor = {
-    (str: string): mongoose.Schema.Types.ObjectId;
-    new(str: string): mongoose.Schema.Types.ObjectId;
-};
-
-export const toObjectId = (str: string): mongoose.Schema.Types.ObjectId =>
-    new (mongoose.Types.ObjectId as unknown as ObjectIdConstructor)(str);
 
 // Gets all people user follows
 router.get('/following', async (req: AuthRequest, res: Response) => {
@@ -100,16 +85,7 @@ router.get('/profile/:username', async (req: AuthRequest, res: Response) => {
     }
 });
 
-interface IUserChanged {
-    _id: string;
-    username: string;
-    email: string;
-    info: any;
-    postsIDs: string[];
-    followingIDs: string[];
-    followersIDs: string[];
-    createdAt: Date;
-}
+
 
 // Modifies a user's profile
 router.patch('/profile/:username', async (req: AuthRequest, res: Response) => {

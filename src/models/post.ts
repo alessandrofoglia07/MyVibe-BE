@@ -1,20 +1,5 @@
-import { Document, Schema, model } from "mongoose";
-
-/* Post interface
-author: author's _id
-content: post's content
-likes: array of users' _id who liked the post
-comments: array of comments' _id
-*/
-export interface IPost {
-    author: Schema.Types.ObjectId;
-    authorUsername: string;
-    content: string;
-    likes: string[];
-    comments: string[];
-}
-
-export interface IPostDocument extends IPost, Document { }
+import { Schema, model } from "mongoose";
+import { IPostDocument } from "../types.js";
 
 const PostSchema = new Schema<IPostDocument>({
     author: {

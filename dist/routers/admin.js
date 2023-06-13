@@ -1,25 +1,13 @@
-import express, { Router } from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { sendEmail } from '../index.js';
+import { Router } from 'express';
+import sendEmail from '../utils/sendEmail.js';
 import User from '../models/user.js';
 import { v4 as uuidv4 } from 'uuid';
-dotenv.config();
+import checkAdmin from '../middlewares/checkAdmin.js';
 const router = Router();
-router.use(cors());
-router.use(express.json());
-const checkAdmin = (req, res, next) => {
-    if (req.body.adminPassword === process.env.ADMIN_SECRET_KEY) {
-        next();
-    }
-    else {
-        return res.status(401).send('Unauthorized');
-    }
-};
 // Admin middleware
 router.use(checkAdmin);
 // Starts the verification process for a user
-router.post('/startVerification', checkAdmin, async (req, res) => {
+router.post('/startVerification', async (req, res) => {
     const userToVerify = req.body.userToVerify;
     try {
         const user = await User.findOne({ username: userToVerify });

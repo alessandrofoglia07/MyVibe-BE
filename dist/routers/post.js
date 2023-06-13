@@ -1,53 +1,13 @@
-import express, { Router } from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { verifyAccessToken } from './auth.js';
+import { Router } from 'express';
+import verifyAccessToken from '../middlewares/verifyAccessToken.js';
 import Post from '../models/post.js';
 import Comment from '../models/comment.js';
 import User from '../models/user.js';
-import { toObjectId } from './user.js';
-dotenv.config();
+import getPosts from '../utils/getPostsPipeline.js';
+import { toObjectId } from '../types.js';
+import limitNewLines from '../utils/limitNewLinesInPost.js';
 const router = Router();
-router.use(cors());
-router.use(express.json());
 router.use(verifyAccessToken);
-const limitNewLines = (text) => {
-    const maxConsecutiveNewLines = 3;
-    const regex = new RegExp(`(\\n\\s*){${maxConsecutiveNewLines + 1},}`, 'g');
-    return text.replace(regex, '\n'.repeat(maxConsecutiveNewLines));
-};
-/**
- * Gets posts from the database
- * @param match Filter query
- * @param sort Ex: { createdAt: -1 }
- * @param skip Number of posts to skip
- * @param limit Number of posts to return
- * @param userId User's _id to check if they liked the post
- * @returns Posts
- */
-export const getPosts = async (match, sort, skip, limit, userId) => {
-    return await Post.aggregate([
-        { $match: match },
-        { $sort: sort },
-        { $skip: skip },
-        { $limit: limit },
-        {
-            $lookup: {
-                from: 'users',
-                localField: 'author',
-                foreignField: '_id',
-                as: 'authorData',
-            },
-        },
-        {
-            $addFields: {
-                liked: { $in: [userId, "$likes"] },
-                numLikes: { $size: "$likes" },
-                authorVerified: { $arrayElemAt: ["$authorData.verified", 0] },
-            }
-        }
-    ]);
-};
 // Creates a new post
 router.post('/create', async (req, res) => {
     const authorId = req.userId;

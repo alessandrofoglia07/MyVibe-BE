@@ -41,7 +41,7 @@ const storage = multer.diskStorage({
 });
 
 // Nodemailer setup
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.DEFAULT_EMAIL,
@@ -49,28 +49,7 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-/**Sends an email with nodemailer
- * @param recipient - the email address of the recipient
- * @param subject - the subject of the email
- * @param text - the text of the email
- * @returns void
- */
-export const sendEmail = (recipient: string, subject: string, text: string) => {
-    const mailOptions = {
-        from: process.env.DEFAULT_EMAIL,
-        to: recipient,
-        subject: subject,
-        text: text
-    };
-
-    transporter.sendMail(mailOptions, (err: any, info: any) => {
-        if (err) {
-            console.log(err);
-        }
-    });
-};
-
-// File upload middleware
+// File upload with multer
 export const upload = multer({
     storage,
     fileFilter: (req, file, cb) => {

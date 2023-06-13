@@ -1,28 +1,5 @@
-import { Document, Schema, model } from "mongoose";
-
-export interface IUser {
-    username: string;
-    email: string;
-    password: string;
-    info: {
-        firstName?: string;
-        lastName?: string;
-        bio?: string;
-        profilePicture: string;
-    };
-    postsIDs?: Schema.Types.ObjectId[];
-    followingIDs?: Schema.Types.ObjectId[];
-    followersIDs?: Schema.Types.ObjectId[];
-    forgotPassword?: boolean;
-    verified: boolean;
-    verificationCode?: string;
-}
-
-export interface IUserDocument extends IUser, Document {
-    _id: Schema.Types.ObjectId;
-    createdAt: Date;
-    updatedAt: Date;
-}
+import { Schema, model } from "mongoose";
+import { IUserDocument } from "../types.js";
 
 const UserSchema = new Schema<IUserDocument>({
     username: {

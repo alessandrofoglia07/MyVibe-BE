@@ -1,12 +1,5 @@
-import { Document, Schema, model } from "mongoose";
-
-interface IVerificationCode {
-    username: string;
-    email: string;
-    code: number;
-}
-
-interface IVerificationCodeDocument extends IVerificationCode, Document { }
+import { Schema, model } from "mongoose";
+import { IVerificationCodeDocument } from "../types.js";
 
 const VerificationCodeSchema = new Schema<IVerificationCodeDocument>({
     username: {

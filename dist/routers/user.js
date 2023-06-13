@@ -1,18 +1,12 @@
-import express, { Router } from 'express';
-import cors from 'cors';
+import { Router } from 'express';
 import User from '../models/user.js';
-import { verifyAccessToken } from './auth.js';
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
+import verifyAccessToken from '../middlewares/verifyAccessToken.js';
+import { toObjectId } from '../types.js';
 import { upload } from '../index.js';
 import path from 'path';
-import { getPosts } from './post.js';
-dotenv.config();
+import getPosts from '../utils/getPostsPipeline.js';
 const router = Router();
-router.use(cors());
-router.use(express.json());
 router.use(verifyAccessToken);
-export const toObjectId = (str) => new mongoose.Types.ObjectId(str);
 // Gets all people user follows
 router.get('/following', async (req, res) => {
     const userId = req.userId;

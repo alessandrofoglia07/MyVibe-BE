@@ -1,64 +1,12 @@
-import express, { Router } from 'express';
-import cors from 'cors';
+import { Router } from 'express';
 import User from '../models/user.js';
 import VerificationCode from '../models/verificationCode.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import dotenv from 'dotenv';
-import { sendEmail } from '../index.js';
-dotenv.config();
+import sendEmail from '../utils/sendEmail.js';
+import checkCredentials from '../middlewares/checkCredentials.js';
+import { generateAccessToken, generateRefreshToken } from '../utils/authentication.js';
 const router = Router();
-router.use(cors());
-router.use(express.json());
-/** Generate access token
- * - Use case: after a user has successfully authenticated with valid credentials
- */
-const generateAccessToken = async (user) => {
-    const token = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '15m' });
-    return token;
-};
-/** Generate a refresh for a user and save it to the database
- * - Use case: after a user has successfully authenticated with valid credentials
- */
-const generateRefreshToken = async (user) => {
-    const refreshToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '30 days' });
-    return refreshToken;
-};
-/** Verify access token
- * - Use case: for protected routes that require a valid access token
- */
-export const verifyAccessToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    if (!token)
-        return res.status(401).json({ message: 'Access token not found' });
-    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-        if (err) {
-            console.log(err);
-            return res.status(401).json({ message: 'Invalid access token' });
-        }
-        else {
-            req.userId = user.userId;
-            next();
-        }
-    });
-};
-/** Check if username, email and password are valid */
-const checkCredentials = (req, res, next) => {
-    const emailRegex = /(?: [a - z0 - 9!#$ %& '*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&' * +/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])/;
-    const { username, email, password } = req.body;
-    if (!username || !email || !password)
-        return res.status(400).json({ message: 'All fields required' });
-    if (username.length < 3 || username.length > 20)
-        return res.status(400).json({ message: 'Username must be 3-20 characters long' });
-    if (email.length < 5 || email.length > 50)
-        return res.status(400).json({ message: 'Email must be 5-50 characters long' });
-    if (password.length < 6 || password.length > 16)
-        return res.status(400).json({ message: 'Password must be 6-16 characters long' });
-    if (!emailRegex.test(email))
-        return res.status(400).json({ message: 'Invalid email' });
-    next();
-};
 // Send authentication code to user's email
 /* req format:
 {

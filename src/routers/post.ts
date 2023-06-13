@@ -1,59 +1,15 @@
-import express, { Response, Router } from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import { verifyAccessToken, AuthRequest } from './auth.js';
+import { Response, Router } from 'express';
+import verifyAccessToken from '../middlewares/verifyAccessToken.js';
 import Post from '../models/post.js';
 import Comment from '../models/comment.js';
 import User from '../models/user.js';
-import { toObjectId } from './user.js';
-import mongoose from 'mongoose';
-
-dotenv.config();
+import getPosts from '../utils/getPostsPipeline.js';
+import { AuthRequest, toObjectId } from '../types.js';
+import limitNewLines from '../utils/limitNewLinesInPost.js';
 
 const router = Router();
 
-router.use(cors());
-router.use(express.json());
 router.use(verifyAccessToken);
-
-const limitNewLines = (text: string): string => {
-    const maxConsecutiveNewLines = 3;
-    const regex = new RegExp(`(\\n\\s*){${maxConsecutiveNewLines + 1},}`, 'g');
-    return text.replace(regex, '\n'.repeat(maxConsecutiveNewLines));
-};
-
-/**
- * Gets posts from the database
- * @param match Filter query
- * @param sort Ex: { createdAt: -1 }
- * @param skip Number of posts to skip
- * @param limit Number of posts to return
- * @param userId User's _id to check if they liked the post
- * @returns Posts
- */
-export const getPosts = async (match: mongoose.FilterQuery<any>, sort: Record<string, 1 | -1 | mongoose.Expression.Meta>, skip: number, limit: number, userId: string): Promise<any> => {
-    return await Post.aggregate([
-        { $match: match },
-        { $sort: sort },
-        { $skip: skip },
-        { $limit: limit },
-        {
-            $lookup: {
-                from: 'users',
-                localField: 'author',
-                foreignField: '_id',
-                as: 'authorData',
-            },
-        },
-        {
-            $addFields: {
-                liked: { $in: [userId, "$likes"] },
-                numLikes: { $size: "$likes" },
-                authorVerified: { $arrayElemAt: ["$authorData.verified", 0] },
-            }
-        }
-    ]);
-};
 
 // Creates a new post
 router.post('/create', async (req: AuthRequest, res: Response) => {
