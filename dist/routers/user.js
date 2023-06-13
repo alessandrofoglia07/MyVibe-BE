@@ -1,18 +1,18 @@
 import express, { Router } from 'express';
 import cors from 'cors';
 import User from '../models/user.js';
-import Post from '../models/post.js';
 import { verifyAccessToken } from './auth.js';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { upload } from '../index.js';
 import path from 'path';
+import { getPosts } from './post.js';
 dotenv.config();
 const router = Router();
 router.use(cors());
 router.use(express.json());
 router.use(verifyAccessToken);
-const toObjectId = (str) => new mongoose.Types.ObjectId(str);
+export const toObjectId = (str) => new mongoose.Types.ObjectId(str);
 // Gets all people user follows
 router.get('/following', async (req, res) => {
     const userId = req.userId;
@@ -60,13 +60,13 @@ router.get('/profile/:username', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
         // destructure user object
-        const { _id, email, info, postsIDs, followingIDs, followersIDs, createdAt } = user;
+        const { _id, email, info, postsIDs, followingIDs, followersIDs, createdAt, verified } = user;
         // check if user is following the profile
         const objectId = toObjectId(userId);
         const isFollowing = user.followersIDs?.includes(objectId);
         // check if profile is the user's profile
         const isProfile = userId === user._id.toString();
-        res.json({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt }, isFollowing, isProfile });
+        res.json({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt, verified }, isFollowing, isProfile });
     }
     catch (err) {
         console.log(err);
@@ -142,12 +142,7 @@ router.get('/posts/:username', async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        const posts = (await Post.find({ _id: { $in: user.postsIDs } }).sort({ createdAt: -1 }).limit(10)).map(post => {
-            return {
-                ...post.toObject(),
-                liked: post.likes.includes(userId)
-            };
-        });
+        const posts = await getPosts({ _id: { $in: user.postsIDs } }, { createdAt: -1 }, 0, 10, userId);
         res.json({ message: 'User found', posts });
     }
     catch (err) {

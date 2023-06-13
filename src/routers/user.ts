@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { upload } from '../index.js';
 import path from 'path';
+import { getPosts } from './post.js';
 
 dotenv.config();
 
@@ -21,7 +22,7 @@ type ObjectIdConstructor = {
     new(str: string): mongoose.Schema.Types.ObjectId;
 };
 
-const toObjectId = (str: string): mongoose.Schema.Types.ObjectId =>
+export const toObjectId = (str: string): mongoose.Schema.Types.ObjectId =>
     new (mongoose.Types.ObjectId as unknown as ObjectIdConstructor)(str);
 
 // Gets all people user follows
@@ -83,7 +84,7 @@ router.get('/profile/:username', async (req: AuthRequest, res: Response) => {
         }
 
         // destructure user object
-        const { _id, email, info, postsIDs, followingIDs, followersIDs, createdAt } = user;
+        const { _id, email, info, postsIDs, followingIDs, followersIDs, createdAt, verified } = user;
 
         // check if user is following the profile
         const objectId = toObjectId(userId!);
@@ -92,7 +93,7 @@ router.get('/profile/:username', async (req: AuthRequest, res: Response) => {
         // check if profile is the user's profile
         const isProfile = userId === user._id.toString();
 
-        res.json({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt }, isFollowing, isProfile });
+        res.json({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt, verified }, isFollowing, isProfile });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ message: 'Internal server error' });
@@ -194,12 +195,7 @@ router.get('/posts/:username', async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        const posts = (await Post.find({ _id: { $in: user.postsIDs } }).sort({ createdAt: -1 }).limit(10)).map(post => {
-            return {
-                ...post.toObject(),
-                liked: post.likes.includes(userId!)
-            };
-        });
+        const posts = await getPosts({ _id: { $in: user.postsIDs } }, { createdAt: -1 }, 0, 10, userId!);
 
         res.json({ message: 'User found', posts });
     } catch (err) {

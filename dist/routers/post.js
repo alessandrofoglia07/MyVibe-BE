@@ -5,6 +5,7 @@ import { verifyAccessToken } from './auth.js';
 import Post from '../models/post.js';
 import Comment from '../models/comment.js';
 import User from '../models/user.js';
+import { toObjectId } from './user.js';
 dotenv.config();
 const router = Router();
 router.use(cors());
@@ -14,6 +15,38 @@ const limitNewLines = (text) => {
     const maxConsecutiveNewLines = 3;
     const regex = new RegExp(`(\\n\\s*){${maxConsecutiveNewLines + 1},}`, 'g');
     return text.replace(regex, '\n'.repeat(maxConsecutiveNewLines));
+};
+/**
+ * Gets posts from the database
+ * @param match Filter query
+ * @param sort Ex: { createdAt: -1 }
+ * @param skip Number of posts to skip
+ * @param limit Number of posts to return
+ * @param userId User's _id to check if they liked the post
+ * @returns Posts
+ */
+export const getPosts = async (match, sort, skip, limit, userId) => {
+    return await Post.aggregate([
+        { $match: match },
+        { $sort: sort },
+        { $skip: skip },
+        { $limit: limit },
+        {
+            $lookup: {
+                from: 'users',
+                localField: 'author',
+                foreignField: '_id',
+                as: 'authorData',
+            },
+        },
+        {
+            $addFields: {
+                liked: { $in: [userId, "$likes"] },
+                numLikes: { $size: "$likes" },
+                authorVerified: { $arrayElemAt: ["$authorData.verified", 0] },
+            }
+        }
+    ]);
 };
 // Creates a new post
 router.post('/create', async (req, res) => {
@@ -30,7 +63,7 @@ router.post('/create', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         // creates new post and saves it to the database
         const post = new Post({
-            author: authorId,
+            author: toObjectId(authorId),
             authorUsername: user.username,
             content: newContent,
         });
@@ -99,10 +132,10 @@ router.post('/comments/create/:id', async (req, res) => {
         }
         // creates new comment and saves it to the database
         const comment = new Comment({
-            author: authorId,
+            author: toObjectId(authorId),
             authorUsername: user.username,
             content: newContent,
-            postId
+            postId: toObjectId(postId),
         });
         await comment.save();
         // adds comment to post
@@ -151,13 +184,22 @@ router.get('/comments/:postId', async (req, res) => {
         if (!postId)
             return res.status(400).json({ message: 'Post not found' });
         const comments = await Comment.aggregate([
-            { $match: { postId: postId } },
+            { $match: { postId: toObjectId(postId) } },
             { $sort: { createdAt: -1 } },
             { $skip: skip },
             { $limit: limit },
             {
+                $lookup: {
+                    from: 'users',
+                    localField: 'author',
+                    foreignField: '_id',
+                    as: 'authorData',
+                }
+            },
+            {
                 $addFields: {
-                    liked: { $in: [req.userId, "$likes"] }
+                    liked: { $in: [req.userId, "$likes"] },
+                    authorVerified: { $arrayElemAt: ["$authorData.verified", 0] },
                 }
             }
         ]);
@@ -181,19 +223,8 @@ router.get('/', async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        const posts = await Post.aggregate([
-            { $match: { author: { $in: user.followingIDs?.map(id => id.toString()) } } },
-            {
-                $addFields: {
-                    liked: { $in: [req.userId, "$likes"] },
-                    numLikes: { $size: "$likes" }
-                }
-            },
-            { $sort: { createdAt: -1 } },
-            { $skip: skip },
-            { $limit: limit },
-        ]);
-        const numPosts = await Post.countDocuments({ author: { $in: user.followingIDs?.map(id => id.toString()) } });
+        const posts = await getPosts({ author: { $in: user.followingIDs } }, { createdAt: -1 }, skip, limit, req.userId);
+        const numPosts = await Post.countDocuments({ author: { $in: user.followingIDs } });
         res.json({ posts, numPosts });
     }
     catch (err) {
@@ -209,18 +240,7 @@ router.get('/hashtag/:hashtag', async (req, res) => {
     const skip = (page - 1) * limit;
     try {
         const regexPattern = new RegExp(`#${hashtag}(?!\\w)`, 'i');
-        const posts = await Post.aggregate([
-            { $match: { content: { $regex: regexPattern } } },
-            {
-                $addFields: {
-                    liked: { $in: [req.userId, "$likes"] },
-                    numLikes: { $size: "$likes" }
-                }
-            },
-            { $sort: { numLikes: -1, createdAt: -1 } },
-            { $skip: skip },
-            { $limit: limit }
-        ]);
+        const posts = await getPosts({ content: { $regex: regexPattern } }, { numLikes: -1, createdAt: -1 }, skip, limit, req.userId);
         const postsNum = await Post.countDocuments({ content: { $regex: regexPattern } });
         res.json({ posts, postsNum });
     }
@@ -237,18 +257,7 @@ router.get('/mention/:username', async (req, res) => {
     const skip = (page - 1) * limit;
     try {
         const regexPattern = new RegExp(`@${username}(?!\\w)`, 'i');
-        const posts = await Post.aggregate([
-            { $match: { content: { $regex: regexPattern } } },
-            {
-                $addFields: {
-                    liked: { $in: [req.userId, "$likes"] },
-                    numLikes: { $size: "$likes" }
-                }
-            },
-            { $sort: { numLikes: -1, createdAt: -1 } },
-            { $skip: skip },
-            { $limit: limit }
-        ]);
+        const posts = await getPosts({ content: { $regex: regexPattern } }, { numLikes: -1, createdAt: -1 }, skip, limit, req.userId);
         res.json({ posts });
     }
     catch (err) {

@@ -7,7 +7,7 @@ likes: array of users' _id who liked the post
 comments: array of comments' _id
 */
 export interface IPost {
-    author: string;
+    author: Schema.Types.ObjectId;
     authorUsername: string;
     content: string;
     likes: string[];
@@ -18,7 +18,7 @@ export interface IPostDocument extends IPost, Document { }
 
 const PostSchema = new Schema<IPostDocument>({
     author: {
-        type: String,
+        type: Schema.Types.ObjectId,
         ref: "User",
         required: true
     },
