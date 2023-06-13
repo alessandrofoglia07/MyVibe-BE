@@ -154,7 +154,7 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ message: 'Invalid email or password' });
         const accessToken = await generateAccessToken(user);
         const refreshToken = await generateRefreshToken(user);
-        res.status(200).json({ accessToken, refreshToken, userId: user._id, email: email, username: user.username, message: 'Login successful' });
+        res.status(200).json({ accessToken, refreshToken, userId: user._id, email: email, username: user.username, verified: user.verified, message: 'Login successful' });
     }
     catch (err) {
         console.log(err);

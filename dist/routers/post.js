@@ -141,7 +141,11 @@ router.post('/comments/create/:id', async (req, res) => {
         // adds comment to post
         post.comments.push(comment._id);
         await post.save();
-        res.status(201).json({ comment, message: 'Comment created' });
+        const newComment = {
+            ...comment.toObject(),
+            authorVerified: user.verified,
+        };
+        res.status(201).json({ comment: newComment, message: 'Comment created' });
     }
     catch (err) {
         console.log(err);
