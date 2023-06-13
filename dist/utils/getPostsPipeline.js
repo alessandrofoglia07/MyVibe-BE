@@ -11,7 +11,6 @@ import Post from '../models/post.js';
 const getPosts = async (match, sort, skip, limit, userId) => {
     return await Post.aggregate([
         { $match: match },
-        { $sort: sort },
         { $skip: skip },
         { $limit: limit },
         {
@@ -28,7 +27,8 @@ const getPosts = async (match, sort, skip, limit, userId) => {
                 numLikes: { $size: "$likes" },
                 authorVerified: { $arrayElemAt: ["$authorData.verified", 0] },
             }
-        }
+        },
+        { $sort: sort }
     ]);
 };
 export default getPosts;

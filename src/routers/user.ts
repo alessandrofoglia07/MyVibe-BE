@@ -270,6 +270,7 @@ router.get('/search', async (req: AuthRequest, res: Response) => {
                     ]
                 }
             },
+            { $sort: { username: -1 } },
             {
                 $addFields: {
                     followersCount: { $size: "$followersIDs" }
@@ -289,6 +290,41 @@ router.get('/search', async (req: AuthRequest, res: Response) => {
         });
 
         res.status(200).json({ users, usersCount });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Suggestions for users to follow
+router.get('/suggestions', async (req: AuthRequest, res: Response) => {
+    const userId = req.userId;
+    const { limit = '0', page = '1' } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    try {
+        const users = await User.aggregate([
+            {
+                $match: {
+                    _id: { $ne: toObjectId(userId!) }
+                }
+            },
+            { $limit: Number(limit) },
+            { $skip: skip },
+            { $sort: { verified: -1 } },
+            {
+                $addFields: {
+                    followersCount: { $size: "$followersIDs" }
+                }
+            },
+            { $sort: { followersCount: -1 } }
+        ]);
+
+        const usersCount = await User.countDocuments({
+            _id: { $ne: toObjectId(userId!) }
+        });
+
+        res.status(200).json({ users, usersCount, message: 'Users found' });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ message: 'Internal server error' });

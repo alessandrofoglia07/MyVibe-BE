@@ -10,6 +10,12 @@ const checkCredentials = (req, res, next) => {
         return res.status(400).json({ message: 'Email must be 5-50 characters long' });
     if (password.length < 6 || password.length > 16)
         return res.status(400).json({ message: 'Password must be 6-16 characters long' });
+    if (username.includes(' '))
+        return res.status(400).json({ message: 'Username cannot contain spaces' });
+    if (email.includes(' '))
+        return res.status(400).json({ message: 'Email cannot contain spaces' });
+    if (password.includes(' '))
+        return res.status(400).json({ message: 'Password cannot contain spaces' });
     if (!emailRegex.test(email))
         return res.status(400).json({ message: 'Invalid email' });
     next();

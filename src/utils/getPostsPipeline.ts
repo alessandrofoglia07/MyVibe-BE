@@ -13,7 +13,6 @@ import Post from '../models/post.js';
 const getPosts = async (match: mongoose.FilterQuery<any>, sort: Record<string, 1 | -1 | mongoose.Expression.Meta>, skip: number, limit: number, userId: string): Promise<any> => {
     return await Post.aggregate([
         { $match: match },
-        { $sort: sort },
         { $skip: skip },
         { $limit: limit },
         {
@@ -30,7 +29,8 @@ const getPosts = async (match: mongoose.FilterQuery<any>, sort: Record<string, 1
                 numLikes: { $size: "$likes" },
                 authorVerified: { $arrayElemAt: ["$authorData.verified", 0] },
             }
-        }
+        },
+        { $sort: sort }
     ]);
 };
 
