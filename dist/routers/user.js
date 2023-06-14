@@ -158,7 +158,7 @@ router.post('/follow/:id', async (req, res) => {
         }
         // check if user is already following the user
         if (user.followingIDs?.includes(objToFollowId)) {
-            return res.json({ message: 'User already followed' });
+            return res.status(404).json({ message: 'User already followed' });
         }
         // add user to following list
         user.followingIDs?.push(objToFollowId);
@@ -234,7 +234,7 @@ router.get('/search', async (req, res) => {
                 { 'info.lastName': regex }
             ]
         });
-        res.status(200).json({ users, usersCount });
+        res.json({ users, usersCount });
     }
     catch (err) {
         console.log(err);
@@ -244,13 +244,16 @@ router.get('/search', async (req, res) => {
 // Suggestions for users to follow
 router.get('/suggestions', async (req, res) => {
     const userId = req.userId;
-    const { limit = '0', page = '1' } = req.query;
+    const { limit = '10', page = '1' } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
     try {
+        const user = await User.findById(userId);
+        if (!user)
+            return res.status(404).json({ message: 'User not found' });
         const users = await User.aggregate([
             {
                 $match: {
-                    _id: { $ne: toObjectId(userId) }
+                    _id: { $ne: toObjectId(userId), $nin: user.followingIDs }
                 }
             },
             { $limit: Number(limit) },
@@ -261,12 +264,12 @@ router.get('/suggestions', async (req, res) => {
                     followersCount: { $size: "$followersIDs" }
                 }
             },
-            { $sort: { followersCount: -1 } }
+            { $sort: { followersCount: -1, verified: -1 } }
         ]);
         const usersCount = await User.countDocuments({
             _id: { $ne: toObjectId(userId) }
         });
-        res.status(200).json({ users, usersCount, message: 'Users found' });
+        res.json({ users, usersCount, message: 'Users found' });
     }
     catch (err) {
         console.log(err);
