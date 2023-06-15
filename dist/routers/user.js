@@ -8,16 +8,46 @@ import getPosts from '../utils/getPostsPipeline.js';
 const router = Router();
 router.use(verifyAccessToken);
 // Gets all people user follows
-router.get('/following', async (req, res) => {
-    const userId = req.userId;
+router.get('/following/:username', async (req, res) => {
+    const { username } = req.params;
+    const { page = '1', limit = '10' } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
     try {
-        const user = await User.findById(userId);
+        const user = await User.findOne({ username });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        const following = await User.find({ _id: { $in: user.followingIDs } });
-        const usernames = following.map(user => user.username);
-        res.json({ usernames });
+        const following = await User.aggregate([
+            { $match: { _id: { $in: user.followingIDs } } },
+            { $skip: skip },
+            { $limit: Number(limit) },
+            { $sort: { verified: -1, createdAt: -1 } },
+        ]);
+        const followingCount = await User.countDocuments({ _id: { $in: user.followingIDs } });
+        res.json({ users: following, usersCount: followingCount });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+router.get('/followers/:username', async (req, res) => {
+    const { username } = req.params;
+    const { page = '1', limit = '10' } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+    try {
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const followers = await User.aggregate([
+            { $match: { _id: { $in: user.followersIDs } } },
+            { $skip: skip },
+            { $limit: Number(limit) },
+            { $sort: { verified: -1, createdAt: -1 } },
+        ]);
+        const followersCount = await User.countDocuments({ _id: { $in: user.followersIDs } });
+        res.json({ users: followers, usersCount: followersCount });
     }
     catch (err) {
         console.log(err);
