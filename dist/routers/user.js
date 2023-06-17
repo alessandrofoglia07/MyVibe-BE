@@ -118,8 +118,8 @@ router.patch('/profile/:username', async (req, res) => {
         user.info.bio = changed.info.bio;
         user.username = changed.username;
         user.unreadNotifications.push('Profile updated.');
-        io.to(user._id.toString()).emit('notification', 'Profile updated.');
         await user.save();
+        io.to(user._id.toString()).emit('newNotification', 'Profile updated.');
         res.json({ message: 'User updated' });
     }
     catch (err) {
@@ -200,6 +200,7 @@ router.post('/follow/:id', async (req, res) => {
         toFollow.followersIDs?.push(objUserId);
         toFollow.unreadNotifications.push(`@${user.username} started following you.`);
         await toFollow.save();
+        io.to(toFollow._id.toString()).emit('newNotification', `@${user.username} started following you.`);
         res.json({ message: 'User followed', followerID: objUserId });
     }
     catch (err) {
@@ -304,6 +305,34 @@ router.get('/suggestions', async (req, res) => {
             _id: { $ne: toObjectId(userId) }
         });
         res.json({ users, usersCount, message: 'Users found' });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+router.get('/unreadNotifications/:username', async (req, res) => {
+    const { username } = req.params;
+    try {
+        const user = await User.findOne({ username });
+        if (!user)
+            return res.status(404).json({ message: 'User not found' });
+        res.json({ notifications: user.unreadNotifications });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+router.patch('/notifications/:username', async (req, res) => {
+    const { username } = req.params;
+    try {
+        const user = await User.findOne({ username });
+        if (!user)
+            return res.status(404).json({ message: 'User not found' });
+        user.unreadNotifications = [];
+        await user.save();
+        res.sendStatus(200);
     }
     catch (err) {
         console.log(err);

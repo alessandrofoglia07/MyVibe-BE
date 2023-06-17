@@ -6,6 +6,7 @@ import User from '../models/user.js';
 import getPosts from '../utils/getPostsPipeline.js';
 import { AuthRequest, toObjectId } from '../types.js';
 import limitNewLines from '../utils/limitNewLinesInPost.js';
+import { io } from '../index.js';
 
 const router = Router();
 
@@ -63,7 +64,7 @@ router.post('/like/:id', async (req: AuthRequest, res: Response) => {
 
         // if user has already liked the post, unlike it
         if (post.likes.includes(userId!)) {
-            post.likes = post.likes.filter(id => id === userId);
+            post.likes = post.likes.filter(id => id !== userId);
             await post.save();
             return res.json({ post, message: 'Post unliked' });
         }
@@ -71,6 +72,16 @@ router.post('/like/:id', async (req: AuthRequest, res: Response) => {
         // if user hasn't liked the post, like it
         post.likes.push(userId!);
         await post.save();
+
+        // finds post's author by id
+        const user = await User.findById(userId);
+        const author = await User.findById(post.author);
+
+        if (author) {
+            author.unreadNotifications.push(`@${user?.username} liked your post.`);
+            await author.save();
+            io.to(author._id.toString()).emit('newNotification', `@${user?.username} liked your post.`);
+        }
 
         res.json({ post, message: 'Post liked' });
     } catch (err) {
@@ -102,6 +113,7 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
         // finds user by id
         const user = await User.findById(authorId);
 
+
         // if post doesn't exist, return error
         if (!post) {
             return res.status(404).json({ message: 'Post not found' });
@@ -111,6 +123,9 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+
+        // finds post's author by id
+        const postAuthor = await User.findById(post?.author);
 
         // creates new comment and saves it to the database
         const comment = new Comment({
@@ -130,6 +145,13 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
             authorVerified: user.verified,
         };
 
+        if (postAuthor) {
+            const notification = `@${user.username} commented on your post.`;
+            postAuthor.unreadNotifications.push(notification);
+            await postAuthor.save();
+            io.to(postAuthor._id.toString()).emit('newNotification', notification);
+        }
+
         res.status(201).json({ comment: newComment, message: 'Comment created' });
     } catch (err) {
         console.log(err);
@@ -146,14 +168,25 @@ router.post('/comments/like/:id', async (req: AuthRequest, res: Response) => {
         // finds comment by id
         const comment = await Comment.findById(commentId);
 
+        // finds user by id
+        const user = await User.findById(userId);
+
+        // finds comment's author by id
+        const commentAuthor = await User.findById(comment?.author);
+
         // if comment doesn't exist, return error
         if (!comment) {
             return res.status(404).json({ message: 'Comment not found' });
         }
 
+        // if user doesn't exist, return error
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
         // if user has already liked the comment, unlike it
         if (comment.likes.includes(userId!)) {
-            comment.likes = comment.likes.filter(id => id === userId);
+            comment.likes = comment.likes.filter(id => id !== userId);
             await comment.save();
             return res.json({ comment, message: 'Comment unliked' });
         }
@@ -161,6 +194,13 @@ router.post('/comments/like/:id', async (req: AuthRequest, res: Response) => {
         // if user hasn't liked the comment, like it
         comment.likes.push(userId!);
         await comment.save();
+
+        if (commentAuthor) {
+            const notification = `@${user?.username} liked your comment.`;
+            commentAuthor.unreadNotifications.push(notification);
+            await commentAuthor.save();
+            io.to(commentAuthor._id.toString()).emit('newNotification', notification);
+        }
 
         res.json({ comment, message: 'Comment liked' });
     } catch (err) {

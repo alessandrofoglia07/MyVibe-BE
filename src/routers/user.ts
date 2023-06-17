@@ -146,8 +146,8 @@ router.patch('/profile/:username', async (req: AuthRequest, res: Response) => {
         user.info.bio = changed.info.bio;
         user.username = changed.username;
         user.unreadNotifications.push('Profile updated.');
-        io.to(user._id.toString()).emit('notification', 'Profile updated.');
         await user.save();
+        io.to(user._id.toString()).emit('newNotification', 'Profile updated.');
 
         res.json({ message: 'User updated' });
     } catch (err) {
@@ -246,6 +246,7 @@ router.post('/follow/:id', async (req: AuthRequest, res: Response) => {
         toFollow.followersIDs?.push(objUserId);
         toFollow.unreadNotifications.push(`@${user.username} started following you.`);
         await toFollow.save();
+        io.to(toFollow._id.toString()).emit('newNotification', `@${user.username} started following you.`);
 
         res.json({ message: 'User followed', followerID: objUserId });
     } catch (err) {
@@ -368,6 +369,39 @@ router.get('/suggestions', async (req: AuthRequest, res: Response) => {
         });
 
         res.json({ users, usersCount, message: 'Users found' });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+router.get('/unreadNotifications/:username', async (req: AuthRequest, res: Response) => {
+    const { username } = req.params;
+
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        res.json({ notifications: user.unreadNotifications });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+router.patch('/notifications/:username', async (req: AuthRequest, res: Response) => {
+    const { username } = req.params;
+
+    try {
+        const user = await User.findOne({ username });
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        user.unreadNotifications = [];
+        await user.save();
+
+        res.sendStatus(200);
     } catch (err) {
         console.log(err);
         return res.status(500).json({ message: 'Internal server error' });
