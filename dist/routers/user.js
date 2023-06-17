@@ -5,6 +5,7 @@ import { toObjectId } from '../types.js';
 import { upload } from '../index.js';
 import path from 'path';
 import getPosts from '../utils/getPostsPipeline.js';
+import { io } from '../index.js';
 const router = Router();
 router.use(verifyAccessToken);
 // Gets all people user follows
@@ -116,6 +117,8 @@ router.patch('/profile/:username', async (req, res) => {
         user.info.lastName = changed.info.lastName;
         user.info.bio = changed.info.bio;
         user.username = changed.username;
+        user.unreadNotifications.push('Profile updated.');
+        io.to(user._id.toString()).emit('notification', 'Profile updated.');
         await user.save();
         res.json({ message: 'User updated' });
     }
@@ -195,6 +198,7 @@ router.post('/follow/:id', async (req, res) => {
         await user.save();
         // add user to followers list
         toFollow.followersIDs?.push(objUserId);
+        toFollow.unreadNotifications.push(`@${user.username} started following you.`);
         await toFollow.save();
         res.json({ message: 'User followed', followerID: objUserId });
     }

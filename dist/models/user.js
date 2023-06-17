@@ -69,6 +69,11 @@ const UserSchema = new Schema({
     },
     verificationCode: {
         type: String,
+    },
+    unreadNotifications: {
+        type: [String],
+        default: [],
+        required: true
     }
 }, {
     timestamps: true

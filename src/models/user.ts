@@ -71,6 +71,11 @@ const UserSchema = new Schema<IUserDocument>({
     },
     verificationCode: {
         type: String,
+    },
+    unreadNotifications: {
+        type: [String],
+        default: [],
+        required: true
     }
 }, {
     timestamps: true

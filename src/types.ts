@@ -37,6 +37,7 @@ export interface IUser {
     forgotPassword?: boolean;
     verified: boolean;
     verificationCode?: string;
+    unreadNotifications: string[];
 };
 
 export interface IUserDocument extends IUser, Document {
