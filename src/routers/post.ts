@@ -73,6 +73,8 @@ router.post('/like/:id', async (req: AuthRequest, res: Response) => {
         post.likes.push(userId!);
         await post.save();
 
+        res.json({ post, message: 'Post liked' });
+
         // finds post's author by id
         const user = await User.findById(userId);
         const author = await User.findById(post.author);
@@ -83,7 +85,6 @@ router.post('/like/:id', async (req: AuthRequest, res: Response) => {
             io.to(author._id.toString()).emit('newNotification', `@${user?.username} liked your post.`);
         }
 
-        res.json({ post, message: 'Post liked' });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ message: 'Internal Server Error' });
@@ -124,9 +125,6 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // finds post's author by id
-        const postAuthor = await User.findById(post?.author);
-
         // creates new comment and saves it to the database
         const comment = new Comment({
             author: toObjectId(authorId!),
@@ -145,6 +143,11 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
             authorVerified: user.verified,
         };
 
+        res.status(201).json({ comment: newComment, message: 'Comment created' });
+
+        // finds post's author by id
+        const postAuthor = await User.findById(post?.author);
+
         if (postAuthor) {
             const notification = `@${user.username} commented on your post.`;
             postAuthor.unreadNotifications.push(notification);
@@ -152,7 +155,6 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
             io.to(postAuthor._id.toString()).emit('newNotification', notification);
         }
 
-        res.status(201).json({ comment: newComment, message: 'Comment created' });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ message: 'Internal Server Error' });
@@ -170,9 +172,6 @@ router.post('/comments/like/:id', async (req: AuthRequest, res: Response) => {
 
         // finds user by id
         const user = await User.findById(userId);
-
-        // finds comment's author by id
-        const commentAuthor = await User.findById(comment?.author);
 
         // if comment doesn't exist, return error
         if (!comment) {
@@ -195,6 +194,11 @@ router.post('/comments/like/:id', async (req: AuthRequest, res: Response) => {
         comment.likes.push(userId!);
         await comment.save();
 
+        res.json({ comment, message: 'Comment liked' });
+
+        // finds comment's author by id
+        const commentAuthor = await User.findById(comment?.author);
+
         if (commentAuthor) {
             const notification = `@${user?.username} liked your comment.`;
             commentAuthor.unreadNotifications.push(notification);
@@ -202,7 +206,6 @@ router.post('/comments/like/:id', async (req: AuthRequest, res: Response) => {
             io.to(commentAuthor._id.toString()).emit('newNotification', notification);
         }
 
-        res.json({ comment, message: 'Comment liked' });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ message: 'Internal Server Error' });

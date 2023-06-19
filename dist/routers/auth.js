@@ -6,6 +6,7 @@ import bcrypt from 'bcrypt';
 import sendEmail from '../utils/sendEmail.js';
 import checkCredentials from '../middlewares/checkCredentials.js';
 import { generateAccessToken, generateRefreshToken } from '../utils/authentication.js';
+import { io } from '../index.js';
 const router = Router();
 // Send authentication code to user's email
 /* req format:
@@ -103,6 +104,9 @@ router.post('/login', async (req, res) => {
         const accessToken = await generateAccessToken(user);
         const refreshToken = await generateRefreshToken(user);
         res.status(200).json({ accessToken, refreshToken, userId: user._id, email: email, username: user.username, verified: user.verified, message: 'Login successful' });
+        setTimeout(() => {
+            io.to(user._id.toString()).emit('newNotification', 'Welcome to MyVibe!');
+        }, 3000);
     }
     catch (err) {
         console.log(err);
@@ -193,8 +197,10 @@ router.post('/completeVerification/:verificationCode', async (req, res) => {
             return res.status(404).json({ message: 'User not found.' });
         user.verified = true;
         user.verificationCode = undefined;
+        user.unreadNotifications.push('Your account has been verified. Welcome to MyVibe!');
         await user.save();
-        res.status(200).json({ message: 'Verification completed.' });
+        io.to(user._id.toString()).emit('newNotification', 'Your account has been verified. Welcome to MyVibe!');
+        res.json({ message: 'Verification completed.' });
     }
     catch (err) {
         console.log(err);

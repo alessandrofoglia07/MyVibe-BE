@@ -7,6 +7,7 @@ import sendEmail from '../utils/sendEmail.js';
 import checkCredentials from '../middlewares/checkCredentials.js';
 import { IUserDocument } from '../types.js';
 import { generateAccessToken, generateRefreshToken } from '../utils/authentication.js';
+import { io } from '../index.js';
 
 const router = Router();
 
@@ -113,6 +114,11 @@ router.post('/login', async (req: Request, res: Response) => {
         const refreshToken = await generateRefreshToken(user);
 
         res.status(200).json({ accessToken, refreshToken, userId: user._id, email: email, username: user.username, verified: user.verified, message: 'Login successful' });
+
+        setTimeout(() => {
+            io.to(user._id.toString()).emit('newNotification', 'Welcome to MyVibe!');
+        }, 3000);
+
     } catch (err) {
         console.log(err);
         return res.sendStatus(500);
@@ -216,9 +222,11 @@ router.post('/completeVerification/:verificationCode', async (req: Request, res:
 
         user.verified = true;
         user.verificationCode = undefined;
+        user.unreadNotifications.push('Your account has been verified. Welcome to MyVibe!');
         await user.save();
+        io.to(user._id.toString()).emit('newNotification', 'Your account has been verified. Welcome to MyVibe!');
 
-        res.status(200).json({ message: 'Verification completed.' });
+        res.json({ message: 'Verification completed.' });
     } catch (err) {
         console.log(err);
         return res.sendStatus(500).json({ message: 'Internal server error.' });

@@ -145,11 +145,14 @@ router.patch('/profile/:username', async (req: AuthRequest, res: Response) => {
         user.info.lastName = changed.info.lastName;
         user.info.bio = changed.info.bio;
         user.username = changed.username;
+        await user.save();
+
+        res.json({ message: 'User updated' });
+
         user.unreadNotifications.push('Profile updated.');
         await user.save();
         io.to(user._id.toString()).emit('newNotification', 'Profile updated.');
 
-        res.json({ message: 'User updated' });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ message: 'Internal server error' });
@@ -244,11 +247,14 @@ router.post('/follow/:id', async (req: AuthRequest, res: Response) => {
 
         // add user to followers list
         toFollow.followersIDs?.push(objUserId);
+        await toFollow.save();
+
+        res.json({ message: 'User followed', followerID: objUserId });
+
         toFollow.unreadNotifications.push(`@${user.username} started following you.`);
         await toFollow.save();
         io.to(toFollow._id.toString()).emit('newNotification', `@${user.username} started following you.`);
 
-        res.json({ message: 'User followed', followerID: objUserId });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ message: 'Internal server error' });
