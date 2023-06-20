@@ -43,7 +43,7 @@ router.post('/create', async (req, res) => {
                     const user = await User.findOne({ username });
                     if (!user)
                         continue;
-                    const notification = `@${user.username} mentioned you in a post.`;
+                    const notification = `@${post.authorUsername} mentioned you in a post.`;
                     user.unreadNotifications.push(notification);
                     await user.save();
                     io.to(user._id.toString()).emit('newNotification', notification);
