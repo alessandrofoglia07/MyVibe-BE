@@ -54,9 +54,9 @@ router.post('/create', async (req: AuthRequest, res: Response) => {
                 try {
                     const user = await User.findOne({ username });
 
-                    if (!user) continue;
+                    if (!user || user._id.toString() === authorId) continue;
 
-                    const notification = `@${post.authorUsername} mentioned you in a post.`;
+                    const notification = `@${post.authorUsername} mentioned you in a [post]${post._id}.`;
 
                     user.unreadNotifications.push(notification);
                     await user.save();
@@ -104,10 +104,10 @@ router.post('/like/:id', async (req: AuthRequest, res: Response) => {
         const user = await User.findById(userId);
         const author = await User.findById(post.author);
 
-        if (author) {
-            author.unreadNotifications.push(`@${user?.username} liked your post.`);
+        if (author && author._id.toString() !== user?._id.toString()) {
+            author.unreadNotifications.push(`@${user?.username} liked your [post]${post._id}.`);
             await author.save();
-            io.to(author._id.toString()).emit('newNotification', `@${user?.username} liked your post.`);
+            io.to(author._id.toString()).emit('newNotification', `@${user?.username} liked your [post]${post._id}.`);
         }
 
     } catch (err) {
@@ -136,9 +136,8 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
         // finds post by id
         const post = await Post.findById(postId);
 
-        // finds user by id
-        const user = await User.findById(authorId);
-
+        // finds comment's author by id
+        const commentAuthor = await User.findById(authorId);
 
         // if post doesn't exist, return error
         if (!post) {
@@ -146,14 +145,14 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
         }
 
         // if user doesn't exist, return error
-        if (!user) {
+        if (!commentAuthor) {
             return res.status(404).json({ message: 'User not found' });
         }
 
         // creates new comment and saves it to the database
         const comment = new Comment({
             author: toObjectId(authorId!),
-            authorUsername: user.username,
+            authorUsername: commentAuthor.username,
             content: newContent,
             postId: toObjectId(postId),
         });
@@ -165,7 +164,7 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
 
         const newComment = {
             ...comment.toObject(),
-            authorVerified: user.verified,
+            authorVerified: commentAuthor.verified,
         };
 
         res.status(201).json({ comment: newComment, message: 'Comment created' });
@@ -174,8 +173,8 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
         const postAuthor = await User.findById(post?.author);
 
         // sends notification to post's author
-        if (postAuthor) {
-            const notification = `@${user.username} commented on your post.`;
+        if (postAuthor && postAuthor._id.toString() !== commentAuthor._id.toString()) {
+            const notification = `@${commentAuthor.username} commented on your [post]${postId}.`;
             postAuthor.unreadNotifications.push(notification);
             await postAuthor.save();
             io.to(postAuthor._id.toString()).emit('newNotification', notification);
@@ -192,12 +191,12 @@ router.post('/comments/create/:id', async (req: AuthRequest, res: Response) => {
                 try {
                     const user = await User.findOne({ username });
 
-                    if (!user) continue;
+                    if (!user || user._id.toString() === authorId) continue;
 
-                    user.unreadNotifications.push(`@${user.username} mentioned you in a comment.`);
+                    user.unreadNotifications.push(`@${commentAuthor.username} mentioned you in a [comment]${postId}.`);
                     await user.save();
 
-                    io.to(user._id.toString()).emit('newNotification', `@${user.username} mentioned you in a comment.`);
+                    io.to(user._id.toString()).emit('newNotification', `@${commentAuthor.username} mentioned you in a [comment]${postId}.`);
                 } catch (err) {
                     console.log(err);
                 }
@@ -248,8 +247,8 @@ router.post('/comments/like/:id', async (req: AuthRequest, res: Response) => {
         // finds comment's author by id
         const commentAuthor = await User.findById(comment?.author);
 
-        if (commentAuthor) {
-            const notification = `@${user?.username} liked your comment.`;
+        if (commentAuthor && commentAuthor._id.toString() !== userId) {
+            const notification = `@${user?.username} liked your [comment]${comment.postId}.`;
             commentAuthor.unreadNotifications.push(notification);
             await commentAuthor.save();
             io.to(commentAuthor._id.toString()).emit('newNotification', notification);
