@@ -33,6 +33,26 @@ router.post('/create', async (req, res) => {
         user.postsIDs?.push(post._id);
         await user.save();
         res.status(201).json({ post, message: 'Post created' });
+        // handle notifications to mentioned users
+        const mentionRegex = /@(\w+)/g;
+        const matches = newContent.match(mentionRegex);
+        if (matches) {
+            for (const match of matches) {
+                const username = match.slice(1);
+                try {
+                    const user = await User.findOne({ username });
+                    if (!user)
+                        continue;
+                    const notification = `@${user.username} mentioned you in a post.`;
+                    user.unreadNotifications.push(notification);
+                    await user.save();
+                    io.to(user._id.toString()).emit('newNotification', notification);
+                }
+                catch (err) {
+                    console.log(err);
+                }
+            }
+        }
     }
     catch (err) {
         console.log(err);
@@ -117,11 +137,31 @@ router.post('/comments/create/:id', async (req, res) => {
         res.status(201).json({ comment: newComment, message: 'Comment created' });
         // finds post's author by id
         const postAuthor = await User.findById(post?.author);
+        // sends notification to post's author
         if (postAuthor) {
             const notification = `@${user.username} commented on your post.`;
             postAuthor.unreadNotifications.push(notification);
             await postAuthor.save();
             io.to(postAuthor._id.toString()).emit('newNotification', notification);
+        }
+        // handle notifications to mentioned users
+        const mentionRegex = /@(\w+)/g;
+        const matches = newContent.match(mentionRegex);
+        if (matches && matches.some(mention => mention !== postAuthor?.username)) {
+            for (const match of matches) {
+                const username = match.slice(1);
+                try {
+                    const user = await User.findOne({ username });
+                    if (!user)
+                        continue;
+                    user.unreadNotifications.push(`@${user.username} mentioned you in a comment.`);
+                    await user.save();
+                    io.to(user._id.toString()).emit('newNotification', `@${user.username} mentioned you in a comment.`);
+                }
+                catch (err) {
+                    console.log(err);
+                }
+            }
         }
     }
     catch (err) {
