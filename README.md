@@ -21,6 +21,8 @@ The backend is built with NodeJS (Typescript) using:
 -   [jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken)
 -   [multer](https://www.npmjs.com/package/multer)
 -   [uuid](https://www.npmjs.com/package/uuid)
+-   [socket.io](https://socket.io/)
+-   [leo-profanity](https://www.npmjs.com/package/leo-profanity)
 
 ## Node Server Scripts
 
