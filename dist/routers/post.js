@@ -300,4 +300,19 @@ router.get('/mention/:username', async (req, res) => {
         return res.status(500).json({ message: 'Internal Server Error' });
     }
 });
+// Gets a specific post by id
+router.get('/post/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const post = await Post.findById(id);
+        if (!post) {
+            return res.status(404).json({ message: 'Post not found' });
+        }
+        res.json(post);
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
 export default router;
