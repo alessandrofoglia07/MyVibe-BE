@@ -7,10 +7,12 @@ import getPosts from '../utils/getPostsPipeline.js';
 import { AuthRequest, toObjectId } from '../types.js';
 import limitNewLines from '../utils/limitNewLinesInPost.js';
 import { io } from '../index.js';
+import checkBanned from '../middlewares/checkBanned.js';
 
 const router = Router();
 
 router.use(verifyAccessToken);
+router.use(checkBanned);
 
 // Creates a new post
 router.post('/create', async (req: AuthRequest, res: Response) => {

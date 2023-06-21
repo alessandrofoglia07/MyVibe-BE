@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import sendEmail from '../utils/sendEmail.js';
 import User from '../models/user.js';
+import Post from '../models/post.js';
+import Comment from '../models/comment.js';
 import { v4 as uuidv4 } from 'uuid';
 import checkAdmin from '../middlewares/checkAdmin.js';
+import BannedID from '../models/bannedIDs.js';
 const router = Router();
 // Admin middleware
 router.use(checkAdmin);
@@ -29,6 +32,40 @@ router.post('/startVerification', async (req, res) => {
     catch (err) {
         console.log(err);
         return res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+router.delete('/resetPostsAndComments', async (req, res) => {
+    try {
+        await User.updateMany({}, { postsIDs: [] });
+        await Post.deleteMany({});
+        await Comment.deleteMany({});
+        return res.json({ message: 'Posts and comments reset successfully' });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+router.get('/bannedIDs', async (req, res) => {
+    try {
+        const bannedIDs = await BannedID.find({});
+        return res.json(bannedIDs);
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+});
+router.post('/ban/:userId', async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const bannedID = new BannedID({ userId });
+        await bannedID.save();
+        return res.json({ message: 'User banned successfully' });
+    }
+    catch (err) {
+        console.log(err);
+        return res.status(500).json({ message: 'Internal server error' });
     }
 });
 export default router;

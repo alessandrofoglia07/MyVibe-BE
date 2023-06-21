@@ -6,10 +6,12 @@ import { upload } from '../index.js';
 import path from 'path';
 import getPosts from '../utils/getPostsPipeline.js';
 import { io } from '../index.js';
+import checkBanned from '../middlewares/checkBanned.js';
 
 const router = Router();
 
 router.use(verifyAccessToken);
+router.use(checkBanned);
 
 // Gets all people user follows
 router.get('/following/:username', async (req: AuthRequest, res: Response) => {

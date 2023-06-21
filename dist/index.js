@@ -17,15 +17,9 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 // Socket.io setup
-export const io = new Server(server, {
-    cors: {
-        origin: 'http://localhost:3000',
-    }
-});
+export const io = new Server(server, { cors: { origin: process.env.CLIENT_URL } });
 // Cors config
-app.use(cors({
-    origin: 'http://localhost:3000',
-}));
+app.use(cors({ origin: process.env.CLIENT_URL }));
 app.use(express.json());
 // Routes
 app.use('/api/v1/auth', authRouter);

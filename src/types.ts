@@ -80,4 +80,11 @@ export interface IVerificationCode {
 
 export interface IVerificationCodeDocument extends IVerificationCode, Document { };
 
+interface IBannedID {
+    userId: ObjectId;
+    bannedAt: Date;
+}
+
+export interface IBannedIDDocument extends IBannedID, Document { };
+
 export const toObjectId = (str: string): ObjectId => new (mongoose.Types.ObjectId as unknown as ObjectIdConstructor)(str);
