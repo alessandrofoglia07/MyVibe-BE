@@ -30,6 +30,11 @@ const getPosts = async (match: mongoose.FilterQuery<any>, sort: Record<string, 1
                 authorVerified: { $arrayElemAt: ["$authorData.verified", 0] },
             }
         },
+        {
+            $project: {
+                authorData: 0,
+            }
+        },
         { $sort: sort }
     ]);
 };

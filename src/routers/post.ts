@@ -289,6 +289,11 @@ router.get('/comments/:postId', async (req: AuthRequest, res: Response) => {
                     liked: { $in: [req.userId, "$likes"] },
                     authorVerified: { $arrayElemAt: ["$authorData.verified", 0] },
                 }
+            },
+            {
+                $project: {
+                    authorData: 0
+                }
             }
         ]);
 
@@ -372,7 +377,7 @@ router.get('/post/:id', async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
 
     try {
-        const post = await Post.findById(id);
+        const [post] = await getPosts({ _id: toObjectId(id) }, { createdAt: -1 }, 0, 1, req.userId!);
 
         if (!post) {
             return res.status(404).json({ message: 'Post not found' });

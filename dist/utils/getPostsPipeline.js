@@ -28,6 +28,11 @@ const getPosts = async (match, sort, skip, limit, userId) => {
                 authorVerified: { $arrayElemAt: ["$authorData.verified", 0] },
             }
         },
+        {
+            $project: {
+                authorData: 0,
+            }
+        },
         { $sort: sort }
     ]);
 };

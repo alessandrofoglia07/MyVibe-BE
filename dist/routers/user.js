@@ -25,6 +25,14 @@ router.get('/following/:username', async (req, res) => {
             { $skip: skip },
             { $limit: Number(limit) },
             { $sort: { verified: -1, createdAt: -1 } },
+            {
+                $project: {
+                    username: 1,
+                    info: 1,
+                    verified: 1,
+                    createdAt: 1
+                }
+            }
         ]);
         const followingCount = await User.countDocuments({ _id: { $in: user.followingIDs } });
         res.json({ users: following, usersCount: followingCount });
@@ -48,6 +56,14 @@ router.get('/followers/:username', async (req, res) => {
             { $skip: skip },
             { $limit: Number(limit) },
             { $sort: { verified: -1, createdAt: -1 } },
+            {
+                $project: {
+                    username: 1,
+                    info: 1,
+                    verified: 1,
+                    createdAt: 1
+                }
+            }
         ]);
         const followersCount = await User.countDocuments({ _id: { $in: user.followersIDs } });
         res.json({ users: followers, usersCount: followersCount });
@@ -66,7 +82,7 @@ router.get('/pfp/:username', async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
         if (user.info.profilePicture === '') {
-            return res.json({ message: 'No profile picture' });
+            return res.status(204).json({ message: 'No profile picture' });
         }
         const __filename = path.resolve();
         const imagePath = path.join(__filename, 'public', 'images', user.info.profilePicture);
