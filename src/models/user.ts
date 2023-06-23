@@ -43,6 +43,10 @@ const UserSchema = new Schema<IUserDocument>({
         profilePicture: {
             type: String,
             default: ''
+        },
+        showEmail: {
+            type: Boolean,
+            default: false
         }
     },
     postsIDs: {

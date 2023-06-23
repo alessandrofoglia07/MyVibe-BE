@@ -131,7 +131,13 @@ router.get('/profile/:username', async (req: AuthRequest, res: Response) => {
         // check if profile is the user's profile
         const isProfile = userId === user._id.toString();
 
-        res.json({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt, verified }, isFollowing, isProfile });
+        let toSend: any = { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt, verified };
+
+        if (!info.showEmail) {
+            delete toSend.email;
+        }
+
+        res.json({ message: 'User found', user: toSend, isFollowing, isProfile });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ message: 'Internal server error' });
@@ -341,7 +347,16 @@ router.get('/search', async (req: AuthRequest, res: Response) => {
             },
             { $sort: { followersCount: -1 } },
             { $limit: Number(limit) },
-            { $skip: (Number(page) - 1) * Number(limit) }
+            { $skip: (Number(page) - 1) * Number(limit) },
+            {
+                $project: {
+                    email: { $cond: [{ $eq: ['$info.showEmail', true] }, '$email', null] },
+                    username: 1,
+                    info: 1,
+                    followersCount: 1,
+                    verified: 1
+                }
+            }
         ]);
 
         const usersCount = await User.countDocuments({
@@ -385,7 +400,16 @@ router.get('/suggestions', async (req: AuthRequest, res: Response) => {
                     followersCount: { $size: "$followersIDs" }
                 }
             },
-            { $sort: { followersCount: -1, verified: -1 } }
+            { $sort: { followersCount: -1, verified: -1 } },
+            {
+                $project: {
+                    email: { $cond: [{ $eq: ['$info.showEmail', true] }, '$email', null] },
+                    username: 1,
+                    info: 1,
+                    followersCount: 1,
+                    verified: 1
+                }
+            }
         ]);
 
         const usersCount = await User.countDocuments({

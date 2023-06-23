@@ -109,7 +109,11 @@ router.get('/profile/:username', async (req, res) => {
         const isFollowing = user.followersIDs?.includes(objectId);
         // check if profile is the user's profile
         const isProfile = userId === user._id.toString();
-        res.json({ message: 'User found', user: { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt, verified }, isFollowing, isProfile });
+        let toSend = { _id, username, email, info, postsIDs, followingIDs, followersIDs, createdAt, verified };
+        if (!info.showEmail) {
+            delete toSend.email;
+        }
+        res.json({ message: 'User found', user: toSend, isFollowing, isProfile });
     }
     catch (err) {
         console.log(err);
@@ -280,7 +284,16 @@ router.get('/search', async (req, res) => {
             },
             { $sort: { followersCount: -1 } },
             { $limit: Number(limit) },
-            { $skip: (Number(page) - 1) * Number(limit) }
+            { $skip: (Number(page) - 1) * Number(limit) },
+            {
+                $project: {
+                    email: { $cond: [{ $eq: ['$info.showEmail', true] }, '$email', null] },
+                    username: 1,
+                    info: 1,
+                    followersCount: 1,
+                    verified: 1
+                }
+            }
         ]);
         const usersCount = await User.countDocuments({
             $or: [
@@ -319,7 +332,16 @@ router.get('/suggestions', async (req, res) => {
                     followersCount: { $size: "$followersIDs" }
                 }
             },
-            { $sort: { followersCount: -1, verified: -1 } }
+            { $sort: { followersCount: -1, verified: -1 } },
+            {
+                $project: {
+                    email: { $cond: [{ $eq: ['$info.showEmail', true] }, '$email', null] },
+                    username: 1,
+                    info: 1,
+                    followersCount: 1,
+                    verified: 1
+                }
+            }
         ]);
         const usersCount = await User.countDocuments({
             _id: { $ne: toObjectId(userId) }

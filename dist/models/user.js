@@ -41,6 +41,10 @@ const UserSchema = new Schema({
         profilePicture: {
             type: String,
             default: ''
+        },
+        showEmail: {
+            type: Boolean,
+            default: false
         }
     },
     postsIDs: {

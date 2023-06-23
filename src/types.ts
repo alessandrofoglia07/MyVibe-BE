@@ -30,6 +30,7 @@ export interface IUser {
         lastName?: string;
         bio?: string;
         profilePicture: string;
+        showEmail: boolean;
     };
     postsIDs?: ObjectId[];
     followingIDs?: ObjectId[];
