@@ -139,6 +139,7 @@ router.patch('/profile/:username', async (req, res) => {
         user.info.lastName = changed.info.lastName;
         user.info.bio = changed.info.bio;
         user.username = changed.username;
+        user.info.showEmail = changed.info.showEmail;
         await user.save();
         res.json({ message: 'User updated' });
         user.unreadNotifications.push('Profile updated.');
