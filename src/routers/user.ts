@@ -144,8 +144,6 @@ router.get('/profile/:username', async (req: AuthRequest, res: Response) => {
     }
 });
 
-
-
 // Modifies a user's profile
 router.patch('/profile/:username', async (req: AuthRequest, res: Response) => {
     const { username } = req.params;

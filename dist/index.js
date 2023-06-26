@@ -31,7 +31,7 @@ notificationSocket(io);
 // Multer storage for uploaded images
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, '/public/images/');
+        cb(null, 'public/images/');
     },
     filename: (req, file, cb) => {
         const uniqueFilename = `${uuidv4()}-${file.originalname}`;
