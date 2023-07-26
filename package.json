@@ -12,7 +12,7 @@
     },
     "keywords": [],
     "author": "Alex",
-    "license": "ISC",
+    "license": "MIT",
     "dependencies": {
         "@types/bcrypt": "^5.0.0",
         "@types/cors": "^2.8.13",
