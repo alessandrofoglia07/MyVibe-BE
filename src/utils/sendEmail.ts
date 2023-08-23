@@ -1,4 +1,4 @@
-import { transporter } from "../index.js";
+import { transporter } from '../index.js';
 
 /**Sends an email with nodemailer
  * @param recipient - the email address of the recipient
