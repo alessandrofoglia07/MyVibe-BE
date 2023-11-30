@@ -2,11 +2,6 @@
 
 myvibe is a social media app that allows users to share their thoughts and feelings with the world. Users can create posts, like posts, and comment on posts. Users can also follow other users to see their posts on their feed.
 
-Note that
-
--   this project is still in development (doesn't have a build yet)
--   you can contribute to this project by opening a pull request or an issue
-
 ## Back-End
 
 The backend is built with NodeJS (Typescript) using:
